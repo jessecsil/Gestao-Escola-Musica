@@ -1,6 +1,29 @@
 import streamlit as st
 import pandas as pd
 import datetime
+from supabase import create_client, Client
+
+# Conexão com Supabase
+supabase_url = st.secrets["SUPABASE_URL"]
+supabase_key = st.secrets["SUPABASE_KEY"]
+supabase: Client = create_client(supabase_url, supabase_key)
+
+# Função para carregar alunos do banco
+def carregar_alunos():
+    resposta = supabase.table("alunos").select("*").execute()
+    return resposta.data
+
+# Função para salvar novo aluno no banco
+def salvar_novo_aluno(dados_aluno):
+    supabase.table("alunos").insert(dados_aluno).execute()
+
+# Função para atualizar aluno no banco
+def atualizar_aluno_banco(aluno_id, dados_aluno):
+    supabase.table("alunos").update(dados_aluno).eq("id", aluno_id).execute()
+
+# Função para deletar aluno do banco
+def deletar_aluno_banco(aluno_id):
+    supabase.table("alunos").delete().eq("id", aluno_id).execute()
 
 # Configuração da página
 st.set_page_config(
