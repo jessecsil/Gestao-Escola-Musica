@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Conexão com o Supabase usando as chaves salvas nos Secrets
+# Conexão com o Supabase usando as chaves dos Secrets
 try:
     supabase_url = st.secrets["SUPABASE_URL"]
     supabase_key = st.secrets["SUPABASE_KEY"]
@@ -30,6 +30,8 @@ DIAS_SEMANA_MAP = {
 }
 
 # --- FUNÇÕES DE BANCO DE DADOS (SUPABASE) ---
+
+# 1. ALUNOS
 def carregar_alunos():
     try:
         res = supabase.table("alunos").select("*").order("nome").execute()
@@ -42,7 +44,7 @@ def salvar_novo_aluno_banco(dados):
         supabase.table("alunos").insert(dados).execute()
         return True
     except Exception as e:
-        st.error(f"Erro ao salvar: {e}")
+        st.error(f"Erro ao salvar aluno: {e}")
         return False
 
 def atualizar_aluno_banco(aluno_id, dados):
@@ -50,7 +52,7 @@ def atualizar_aluno_banco(aluno_id, dados):
         supabase.table("alunos").update(dados).eq("id", aluno_id).execute()
         return True
     except Exception as e:
-        st.error(f"Erro ao atualizar: {e}")
+        st.error(f"Erro ao atualizar aluno: {e}")
         return False
 
 def deletar_aluno_banco(aluno_id):
@@ -58,11 +60,46 @@ def deletar_aluno_banco(aluno_id):
         supabase.table("alunos").delete().eq("id", aluno_id).execute()
         return True
     except Exception as e:
-        st.error(f"Erro ao deletar: {e}")
+        st.error(f"Erro ao deletar aluno: {e}")
         return False
 
-# Carregar alunos ativos do banco para a sessão
+# 2. AULAS
+def carregar_aulas():
+    try:
+        res = supabase.table("aulas").select("*").order("created_at", desc=True).execute()
+        return res.data
+    except:
+        return []
+
+def salvar_aula_banco(dados):
+    try:
+        supabase.table("aulas").insert(dados).execute()
+        return True
+    except Exception as e:
+        st.error(f"Erro ao salvar aula: {e}")
+        return False
+
+# 3. FINANCEIRO
+def carregar_financeiro():
+    try:
+        res = supabase.table("financeiro").select("*").order("created_at", desc=True).execute()
+        return res.data
+    except:
+        return []
+
+def salvar_pagamento_banco(dados):
+    try:
+        supabase.table("financeiro").insert(dados).execute()
+        return True
+    except Exception as e:
+        st.error(f"Erro ao salvar pagamento: {e}")
+        return False
+
+
+# Carregar dados em tempo real do banco de dados
 st.session_state.alunos = carregar_alunos()
+st.session_state.historico_aulas = carregar_aulas()
+st.session_state.historico_pagamentos = carregar_financeiro()
 
 if "mostrar_form_novo" not in st.session_state:
     st.session_state.mostrar_form_novo = False
@@ -75,15 +112,6 @@ if "mostrar_form_registrar_aula" not in st.session_state:
 
 if "mostrar_form_registrar_pagamento" not in st.session_state:
     st.session_state.mostrar_form_registrar_pagamento = False
-
-if "historico_aulas" not in st.session_state:
-    st.session_state.historico_aulas = []
-
-if "reposicoes_pendentes" not in st.session_state:
-    st.session_state.reposicoes_pendentes = []
-
-if "historico_pagamentos" not in st.session_state:
-    st.session_state.historico_pagamentos = []
 
 # Sidebar - Logo e Menu
 with st.sidebar:
@@ -141,7 +169,7 @@ def formatar_horario(horario_str):
     return horario_str
 
 # -----------------------------------------------------------------------------
-# MÓDULO 1: ALUNOS E CONTRATOS (COM SUPABASE)
+# MÓDULO 1: ALUNOS E CONTRATOS
 # -----------------------------------------------------------------------------
 if modulo == "👥 Alunos":
     st.markdown("### 👥 Gestão de Alunos")
@@ -220,7 +248,7 @@ if modulo == "👥 Alunos":
                     
                     if atualizar_aluno_banco(aluno_atual["id"], dados_atualizados):
                         st.session_state.editando_idx = None
-                        st.success(f"Aluno {nome} atualizado no banco de dados!")
+                        st.success(f"Aluno {nome} atualizado!")
                         st.rerun()
 
     else:
@@ -287,7 +315,7 @@ if modulo == "👥 Alunos":
                         
                         if salvar_novo_aluno_banco(novo_aluno):
                             st.session_state.mostrar_form_novo = False
-                            st.success(f"Aluno {nome} salvo com sucesso na nuvem!")
+                            st.success(f"Aluno {nome} salvo!")
                             st.rerun()
 
     st.markdown("---")
@@ -313,100 +341,8 @@ if modulo == "👥 Alunos":
                         st.success("Aluno removido!")
                         st.rerun()
 
-    st.markdown("---")
-    st.markdown("##### 📄 Gerar Contrato em PDF")
-    
-    if st.session_state.alunos:
-        nomes_alunos_pdf = [a["nome"] for a in st.session_state.alunos]
-        aluno_selecionado = st.selectbox("Selecione o aluno:", nomes_alunos_pdf, key="selectbox_gerar_contrato_pdf")
-        
-        aluno_dados = next(a for a in st.session_state.alunos if a["nome"] == aluno_selecionado)
-        nome_empresa = "Harmonia Escola de Música"
-        local_assinatura = "São Paulo, SP"
-        
-        inicio_fmt = aluno_dados.get('inicio_contrato', '___/___/______')
-        termino_fmt = aluno_dados.get('termino_contrato', '___/___/______')
-
-        from fpdf import FPDF
-
-        class PDF(FPDF):
-            def header(self):
-                self.set_font('Arial', 'B', 14)
-                self.cell(0, 10, 'CONTRATO DE PRESTACAO DE SERVICOS', 0, 1, 'C')
-                self.ln(5)
-
-            def footer(self):
-                self.set_y(-15)
-                self.set_font('Arial', 'I', 8)
-                self.cell(0, 10, f'Pagina {self.page_no()}', 0, 0, 'C')
-
-        def criar_pdf_contrato():
-            pdf = PDF()
-            pdf.add_page()
-            pdf.set_font('Arial', '', 11)
-            
-            pdf.cell(0, 8, f"CONTRATANTE: {aluno_dados['nome']}", 0, 1)
-            pdf.cell(0, 8, f"ENDERECO: {aluno_dados.get('endereco', '')}", 0, 1)
-            pdf.cell(0, 8, f"WHATSAPP: {aluno_dados.get('whatsapp', '')}", 0, 1)
-            pdf.cell(0, 8, f"CONTRATADA: {nome_empresa}", 0, 1)
-            pdf.ln(5)
-            
-            pdf.set_font('Arial', 'B', 11)
-            pdf.cell(0, 8, "CLÁUSULA 1ª - DO OBJETO", 0, 1)
-            pdf.set_font('Arial', '', 11)
-            
-            dia_aula = str(aluno_dados.get('dia', '')).lower()
-            if not dia_aula.startswith("aos"):
-                dia_aula = f"aos {dia_aula}"
-                
-            texto_obj = (f"O presente contrato tem por objeto a prestação de serviços de aulas de música "
-                         f"na modalidade {aluno_dados.get('modalidade', '')}, a serem realizadas {dia_aula} "
-                         f"às {aluno_dados.get('horario', '')} horas.")
-            pdf.multi_cell(0, 6, texto_obj)
-            pdf.ln(4)
-            
-            pdf.set_font('Arial', 'B', 11)
-            pdf.cell(0, 8, "CLÁUSULA 2ª - DA VIGÊNCIA E VALOR", 0, 1)
-            pdf.set_font('Arial', '', 11)
-            texto_vig = (f"O contrato terá a vigência de {aluno_dados.get('vigencia', '')}, com início em {inicio_fmt} "
-                         f"e término em {termino_fmt}. O valor total pactuado é de R$ {float(aluno_dados.get('valor_contrato', 0)):.2f}, "
-                         f"adimplido conforme o acordado entre as partes.")
-            pdf.multi_cell(0, 6, texto_vig)
-            pdf.ln(15)
-            
-            pdf.cell(0, 8, f"{local_assinatura}, _____ de _________________ de 20____.", 0, 1)
-            pdf.ln(25)
-            
-            pdf.cell(95, 6, "__________________________________", 0, 0, 'C')
-            pdf.cell(95, 6, "__________________________________", 0, 1, 'C')
-            pdf.cell(95, 6, "CONTRATANTE (Aluno)", 0, 0, 'C')
-            pdf.cell(95, 6, "CONTRATADA (Escola)", 0, 1, 'C')
-
-            saida = pdf.output(dest='S')
-            if isinstance(saida, bytes):
-                return saida
-            elif isinstance(saida, bytearray):
-                return bytes(saida)
-            elif isinstance(saida, str):
-                return saida.encode('latin-1')
-            else:
-                return bytes(saida)
-
-        pdf_bytes = criar_pdf_contrato()
-        
-        st.download_button(
-            label="📥 Baixar Contrato em PDF",
-            data=pdf_bytes,
-            file_name=f"contrato_{aluno_dados['nome'].replace(' ', '_')}.pdf",
-            mime="application/pdf",
-            key="btn_baixar_contrato_direto",
-            use_container_width=True
-        )
-    else:
-        st.info("Cadastre um aluno para gerar o contrato.")
-
 # -----------------------------------------------------------------------------
-# MÓDULO 2: AULAS
+# MÓDULO 2: AULAS (INTEGRADO AO SUPABASE)
 # -----------------------------------------------------------------------------
 if modulo == "Aulas":
     st.markdown("### 📅 Módulo de Aulas")
@@ -478,34 +414,30 @@ if modulo == "Aulas":
                     else:
                         situacao_final = f"{status_aula_reg} (Finalizada)"
 
-                    st.session_state.historico_aulas.insert(0, {
+                    nova_aula = {
                         "aluno": aluno_escolhido,
                         "data": data_aula.strftime("%d/%m/%Y"),
                         "status": situacao_final,
                         "reposta": is_reposta if "Cancelada" in status_aula_reg else "N/A",
                         "custo": custo_reg,
                         "obs": obs_reg
-                    })
+                    }
                     
-                    if "Cancelada" in status_aula_reg and is_reposta == "Sim":
-                        st.session_state.reposicoes_pendentes.append({
-                            "aluno": aluno_escolhido,
-                            "motivo": status_aula_reg,
-                            "data": data_aula.strftime("%d/%m/%Y")
-                        })
-                        
-                    st.session_state.mostrar_form_registrar_aula = False
-                    st.success("Aula registrada!")
-                    st.rerun()
+                    if salvar_aula_banco(nova_aula):
+                        st.session_state.mostrar_form_registrar_aula = False
+                        st.success("Aula registrada no banco de dados!")
+                        st.rerun()
 
     st.markdown("---")
-    total_custos = sum(item.get("custo", 0.0) for item in st.session_state.historico_aulas)
+    
+    reposicoes_pendentes = [a for a in st.session_state.historico_aulas if "Pendente" in a.get("status", "")]
+    total_custos = sum(float(item.get("custo", 0.0)) for item in st.session_state.historico_aulas)
 
     col_m1, col_m2 = st.columns(2)
     with col_m1:
-        st.metric("Reposições Pendentes", len(st.session_state.reposicoes_pendentes))
+        st.metric("Reposições Pendentes", len(reposicoes_pendentes))
     with col_m2:
-        st.metric("Custos do Mês", f"R$ {total_custos:.2f}")
+        st.metric("Custos Registrados", f"R$ {total_custos:.2f}")
 
     st.markdown("##### 📋 Histórico de Aulas")
     if st.session_state.historico_aulas:
@@ -513,13 +445,13 @@ if modulo == "Aulas":
             with st.container(border=True):
                 st.markdown(f"**Aluno: {aula['aluno']}** ({aula['data']})")
                 st.text(f"Status: {aula['status']}")
-                if aula['obs']:
+                if aula.get('obs'):
                     st.text(f"Obs: {aula['obs']}")
     else:
         st.info("Nenhuma aula registrada.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 3: FINANCEIRO
+# MÓDULO 3: FINANCEIRO (INTEGRADO AO SUPABASE)
 # -----------------------------------------------------------------------------
 if modulo == "Financeiro":
     st.markdown("### 💰 Módulo Financeiro")
@@ -560,21 +492,23 @@ if modulo == "Financeiro":
                 if not lista_alunos_obj:
                     st.error("Cadastre um aluno!")
                 else:
-                    st.session_state.historico_pagamentos.insert(0, {
-                        "Aluno": aluno_pag,
-                        "Valor do Contrato": valor_fixo,
-                        "Vencimento do Contrato": vencimento_fixo_str,
-                        "Status": status_pag,
-                        "Observações": obs_pag
-                    })
-                    st.session_state.mostrar_form_registrar_pagamento = False
-                    st.success("Pagamento registrado!")
-                    st.rerun()
+                    novo_pagamento = {
+                        "aluno": aluno_pag,
+                        "valor": valor_fixo,
+                        "vencimento": vencimento_fixo_str,
+                        "status": status_pag,
+                        "observacoes": obs_pag
+                    }
+                    
+                    if salvar_pagamento_banco(novo_pagamento):
+                        st.session_state.mostrar_form_registrar_pagamento = False
+                        st.success("Pagamento registrado no banco de dados!")
+                        st.rerun()
 
     st.markdown("---")
-    total_recebido = sum(float(p.get("Valor do Contrato", 0.0)) for p in st.session_state.historico_pagamentos if p.get("Status") == "Recebido")
-    total_atraso = sum(float(p.get("Valor do Contrato", 0.0)) for p in st.session_state.historico_pagamentos if p.get("Status") == "Em Atraso")
-    total_previsto = sum(float(p.get("Valor do Contrato", 0.0)) for p in st.session_state.historico_pagamentos if p.get("Status") == "Previsto")
+    total_recebido = sum(float(p.get("valor", 0.0)) for p in st.session_state.historico_pagamentos if p.get("status") == "Recebido")
+    total_atraso = sum(float(p.get("valor", 0.0)) for p in st.session_state.historico_pagamentos if p.get("status") == "Em Atraso")
+    total_previsto = sum(float(p.get("valor", 0.0)) for p in st.session_state.historico_pagamentos if p.get("status") == "Previsto")
 
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
@@ -588,25 +522,28 @@ if modulo == "Financeiro":
     if st.session_state.historico_pagamentos:
         for pag in st.session_state.historico_pagamentos:
             with st.container(border=True):
-                st.markdown(f"**{pag['Aluno']}** - R$ {pag['Valor do Contrato']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-                st.text(f"Status: {pag['Status']} | Vencimento: {pag['Vencimento do Contrato']}")
+                st.markdown(f"**{pag['aluno']}** - R$ {float(pag.get('valor', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                st.text(f"Status: {pag['status']} | Vencimento: {pag.get('vencimento', '')}")
     else:
-        st.info("Nenhum registro financeiro.")
+        st.info("Nenhum registro financeiro no banco de dados.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 4: RESUMO DO MÊS
+# MÓDULO 4: RESUMO DO MÊS (INTEGRADO AO SUPABASE)
 # -----------------------------------------------------------------------------
 if modulo == "Resumo do Mês":
     st.markdown("### 📈 Resumo do Mês")
     st.markdown("---")
 
     alunos_ativos_count = sum(1 for a in st.session_state.alunos if a.get("status_contrato") == "Ativo")
-    total_recebido_mes = sum(float(p.get("Valor do Contrato", 0.0)) for p in st.session_state.historico_pagamentos if p.get("Status") == "Recebido")
+    total_recebido_mes = sum(float(p.get("valor", 0.0)) for p in st.session_state.historico_pagamentos if p.get("status") == "Recebido")
+    
     total_custos_transp = sum(float(a.get("custo_transporte", 0.0)) for a in st.session_state.alunos if a.get("custo_transporte"))
+    total_custos_aulas = sum(float(a.get("custo", 0.0)) for a in st.session_state.historico_aulas)
+    custo_geral = total_custos_transp + total_custos_aulas
 
     st.metric("Alunos Ativos", str(alunos_ativos_count))
     st.metric("Recebido no Mês", f"R$ {total_recebido_mes:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    st.metric("Custos com Transporte", f"R$ {total_custos_transp:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    st.metric("Custos com Transporte", f"R$ {custo_geral:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
     st.markdown("---")
     st.markdown("##### 📊 Receita por Aluno")
