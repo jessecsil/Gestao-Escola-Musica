@@ -3,34 +3,20 @@ import pandas as pd
 import datetime
 from supabase import create_client, Client
 
-# Conexão com Supabase
-supabase_url = st.secrets["SUPABASE_URL"]
-supabase_key = st.secrets["SUPABASE_KEY"]
-supabase: Client = create_client(supabase_url, supabase_key)
-
-# Função para carregar alunos do banco
-def carregar_alunos():
-    resposta = supabase.table("alunos").select("*").execute()
-    return resposta.data
-
-# Função para salvar novo aluno no banco
-def salvar_novo_aluno(dados_aluno):
-    supabase.table("alunos").insert(dados_aluno).execute()
-
-# Função para atualizar aluno no banco
-def atualizar_aluno_banco(aluno_id, dados_aluno):
-    supabase.table("alunos").update(dados_aluno).eq("id", aluno_id).execute()
-
-# Função para deletar aluno do banco
-def deletar_aluno_banco(aluno_id):
-    supabase.table("alunos").delete().eq("id", aluno_id).execute()
-
 # Configuração da página
 st.set_page_config(
     page_title="Harmonia Operacional - Gestão de Escola de Música",
     page_icon="🎸",
     layout="wide"
 )
+
+# Conexão com o Supabase usando as chaves salvas nos Secrets
+try:
+    supabase_url = st.secrets["SUPABASE_URL"]
+    supabase_key = st.secrets["SUPABASE_KEY"]
+    supabase: Client = create_client(supabase_url, supabase_key)
+except Exception as e:
+    st.error("⚠️ Erro de conexão com o banco de dados. Verifique as chaves nos Secrets do Streamlit Cloud.")
 
 # Mapeamento dos dias da semana em português
 DIAS_SEMANA_MAP = {
@@ -43,27 +29,40 @@ DIAS_SEMANA_MAP = {
     6: "Domingo"
 }
 
-# Inicialização do estado da sessão com chaves padronizadas
-if "alunos" not in st.session_state:
-    st.session_state.alunos = [
-        {
-            "nome": "João Silva", 
-            "whatsapp": "(11) 98888-7777",
-            "modalidade": "Presencial", 
-            "dia": "Terça-feira", 
-            "horario": "11:00",
-            "endereco": "Rua das Flores, 123 - São Paulo/SP",
-            "valor_contrato": 3600.0, 
-            "origem": "Instagram",
-            "rede_social": "@joaosilva",
-            "custo_transporte": 50.0, 
-            "status_contrato": "Ativo", 
-            "vigencia": "1 ano", 
-            "inicio_contrato": "25/10/26",
-            "termino_contrato": "25/10/27",
-            "aula_concluida": False
-        }
-    ]
+# --- FUNÇÕES DE BANCO DE DADOS (SUPABASE) ---
+def carregar_alunos():
+    try:
+        res = supabase.table("alunos").select("*").order("nome").execute()
+        return res.data
+    except:
+        return []
+
+def salvar_novo_aluno_banco(dados):
+    try:
+        supabase.table("alunos").insert(dados).execute()
+        return True
+    except Exception as e:
+        st.error(f"Erro ao salvar: {e}")
+        return False
+
+def atualizar_aluno_banco(aluno_id, dados):
+    try:
+        supabase.table("alunos").update(dados).eq("id", aluno_id).execute()
+        return True
+    except Exception as e:
+        st.error(f"Erro ao atualizar: {e}")
+        return False
+
+def deletar_aluno_banco(aluno_id):
+    try:
+        supabase.table("alunos").delete().eq("id", aluno_id).execute()
+        return True
+    except Exception as e:
+        st.error(f"Erro ao deletar: {e}")
+        return False
+
+# Carregar alunos ativos do banco para a sessão
+st.session_state.alunos = carregar_alunos()
 
 if "mostrar_form_novo" not in st.session_state:
     st.session_state.mostrar_form_novo = False
@@ -104,7 +103,6 @@ modulo = st.sidebar.radio(
     ]
 )
 
-# Função para calcular o término preservando o formato e separador
 def calcular_termino(inicio_str, vigencia_str):
     try:
         separador = "/"
@@ -143,7 +141,7 @@ def formatar_horario(horario_str):
     return horario_str
 
 # -----------------------------------------------------------------------------
-# MÓDULO 1: ALUNOS E CONTRATOS
+# MÓDULO 1: ALUNOS E CONTRATOS (COM SUPABASE)
 # -----------------------------------------------------------------------------
 if modulo == "👥 Alunos":
     st.markdown("### 👥 Gestão de Alunos")
@@ -203,7 +201,7 @@ if modulo == "👥 Alunos":
                     horario_formatado = formatar_horario(horario_digitos)
                     transporte_final = 0.0 if modalidade == "Online" else custo_transporte
 
-                    st.session_state.alunos[idx_edit] = {
+                    dados_atualizados = {
                         "nome": nome,
                         "whatsapp": whatsapp,
                         "modalidade": modalidade,
@@ -218,11 +216,12 @@ if modulo == "👥 Alunos":
                         "custo_transporte": transporte_final,
                         "status_contrato": status_contrato,
                         "vigencia": vigencia,
-                        "aula_concluida": aluno_atual["aula_concluida"]
                     }
-                    st.session_state.editando_idx = None
-                    st.success(f"Aluno {nome} atualizado!")
-                    st.rerun()
+                    
+                    if atualizar_aluno_banco(aluno_atual["id"], dados_atualizados):
+                        st.session_state.editando_idx = None
+                        st.success(f"Aluno {nome} atualizado no banco de dados!")
+                        st.rerun()
 
     else:
         if not st.session_state.mostrar_form_novo:
@@ -268,7 +267,7 @@ if modulo == "👥 Alunos":
                         horario_formatado = formatar_horario(horario_digitos)
                         transporte_final = 0.0 if modalidade == "Online" else custo_transporte
 
-                        st.session_state.alunos.append({
+                        novo_aluno = {
                             "nome": nome,
                             "whatsapp": whatsapp,
                             "modalidade": modalidade,
@@ -284,33 +283,35 @@ if modulo == "👥 Alunos":
                             "status_contrato": status_contrato,
                             "vigencia": vigencia,
                             "aula_concluida": False
-                        })
-                        st.session_state.mostrar_form_novo = False
-                        st.success(f"Aluno {nome} cadastrado!")
-                        st.rerun()
+                        }
+                        
+                        if salvar_novo_aluno_banco(novo_aluno):
+                            st.session_state.mostrar_form_novo = False
+                            st.success(f"Aluno {nome} salvo com sucesso na nuvem!")
+                            st.rerun()
 
     st.markdown("---")
     st.markdown("##### 📱 Alunos Cadastrados")
     
     if not st.session_state.alunos:
-        st.info("Nenhum aluno registrado.")
+        st.info("Nenhum aluno registrado no banco de dados.")
     else:
         for idx, aluno in enumerate(st.session_state.alunos):
             with st.container(border=True):
                 st.markdown(f"**👤 {aluno['nome']}**")
-                st.text(f"📱 WhatsApp: {aluno['whatsapp']}")
-                st.text(f"🎸 Aula: {aluno['dia']} às {aluno['horario']} ({aluno['modalidade']})")
-                st.text(f"💰 Valor: R$ {aluno['valor_contrato']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-                st.text(f"📌 Status: {aluno['status_contrato']}")
+                st.text(f"📱 WhatsApp: {aluno.get('whatsapp', '')}")
+                st.text(f"🎸 Aula: {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
+                st.text(f"💰 Valor: R$ {float(aluno.get('valor_contrato', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                st.text(f"📌 Status: {aluno.get('status_contrato', '')}")
                 
                 col_btn1, col_btn2 = st.columns(2)
-                if col_btn1.button("✏️ Editar", key=f"edit_{idx}", use_container_width=True):
+                if col_btn1.button("✏️ Editar", key=f"edit_{aluno['id']}", use_container_width=True):
                     st.session_state.editando_idx = idx
                     st.rerun()
-                if col_btn2.button("🗑️ Excluir", key=f"del_{idx}", use_container_width=True):
-                    st.session_state.alunos.pop(idx)
-                    st.success("Aluno removido!")
-                    st.rerun()
+                if col_btn2.button("🗑️ Excluir", key=f"del_{aluno['id']}", use_container_width=True):
+                    if deletar_aluno_banco(aluno['id']):
+                        st.success("Aluno removido!")
+                        st.rerun()
 
     st.markdown("---")
     st.markdown("##### 📄 Gerar Contrato em PDF")
@@ -345,8 +346,8 @@ if modulo == "👥 Alunos":
             pdf.set_font('Arial', '', 11)
             
             pdf.cell(0, 8, f"CONTRATANTE: {aluno_dados['nome']}", 0, 1)
-            pdf.cell(0, 8, f"ENDERECO: {aluno_dados['endereco']}", 0, 1)
-            pdf.cell(0, 8, f"WHATSAPP: {aluno_dados['whatsapp']}", 0, 1)
+            pdf.cell(0, 8, f"ENDERECO: {aluno_dados.get('endereco', '')}", 0, 1)
+            pdf.cell(0, 8, f"WHATSAPP: {aluno_dados.get('whatsapp', '')}", 0, 1)
             pdf.cell(0, 8, f"CONTRATADA: {nome_empresa}", 0, 1)
             pdf.ln(5)
             
@@ -354,21 +355,21 @@ if modulo == "👥 Alunos":
             pdf.cell(0, 8, "CLÁUSULA 1ª - DO OBJETO", 0, 1)
             pdf.set_font('Arial', '', 11)
             
-            dia_aula = aluno_dados['dia'].lower()
+            dia_aula = str(aluno_dados.get('dia', '')).lower()
             if not dia_aula.startswith("aos"):
                 dia_aula = f"aos {dia_aula}"
                 
             texto_obj = (f"O presente contrato tem por objeto a prestação de serviços de aulas de música "
-                         f"na modalidade {aluno_dados['modalidade']}, a serem realizadas {dia_aula} "
-                         f"às {aluno_dados['horario']} horas.")
+                         f"na modalidade {aluno_dados.get('modalidade', '')}, a serem realizadas {dia_aula} "
+                         f"às {aluno_dados.get('horario', '')} horas.")
             pdf.multi_cell(0, 6, texto_obj)
             pdf.ln(4)
             
             pdf.set_font('Arial', 'B', 11)
             pdf.cell(0, 8, "CLÁUSULA 2ª - DA VIGÊNCIA E VALOR", 0, 1)
             pdf.set_font('Arial', '', 11)
-            texto_vig = (f"O contrato terá a vigência de {aluno_dados['vigencia']}, com início em {inicio_fmt} "
-                         f"e término em {termino_fmt}. O valor total pactuado é de R$ {aluno_dados['valor_contrato']:.2f}, "
+            texto_vig = (f"O contrato terá a vigência de {aluno_dados.get('vigencia', '')}, com início em {inicio_fmt} "
+                         f"e término em {termino_fmt}. O valor total pactuado é de R$ {float(aluno_dados.get('valor_contrato', 0)):.2f}, "
                          f"adimplido conforme o acordado entre as partes.")
             pdf.multi_cell(0, 6, texto_vig)
             pdf.ln(15)
@@ -405,12 +406,11 @@ if modulo == "👥 Alunos":
         st.info("Cadastre um aluno para gerar o contrato.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 2: AULAS (Com Agenda do Dia)
+# MÓDULO 2: AULAS
 # -----------------------------------------------------------------------------
 if modulo == "Aulas":
     st.markdown("### 📅 Módulo de Aulas")
     
-    # --- AGENDA DO DIA AUTOMÁTICA ---
     hoje = datetime.date.today()
     dia_semana_hoje = DIAS_SEMANA_MAP[hoje.weekday()]
     data_formatada_hoje = hoje.strftime("%d/%m/%Y")
@@ -423,7 +423,6 @@ if modulo == "Aulas":
     ]
     
     if alunos_hoje:
-        # Ordenar por horário
         alunos_hoje_ordenados = sorted(alunos_hoje, key=lambda x: x.get("horario", ""))
         for a in alunos_hoje_ordenados:
             tipo_icone = "💻 Online" if a.get("modalidade") == "Online" else "🏠 Presencial"
@@ -442,7 +441,6 @@ if modulo == "Aulas":
 
     st.markdown("---")
     
-    # --- REGISTRO DE AULAS REALIZADAS / CANCELADAS ---
     if not st.session_state.mostrar_form_registrar_aula:
         if st.button("➕ Registrar Aula", use_container_width=True):
             st.session_state.mostrar_form_registrar_aula = True
@@ -604,7 +602,7 @@ if modulo == "Resumo do Mês":
 
     alunos_ativos_count = sum(1 for a in st.session_state.alunos if a.get("status_contrato") == "Ativo")
     total_recebido_mes = sum(float(p.get("Valor do Contrato", 0.0)) for p in st.session_state.historico_pagamentos if p.get("Status") == "Recebido")
-    total_custos_transp = sum(float(a.get("custo_transporte", 0.0)) for a in st.session_state.alunos)
+    total_custos_transp = sum(float(a.get("custo_transporte", 0.0)) for a in st.session_state.alunos if a.get("custo_transporte"))
 
     st.metric("Alunos Ativos", str(alunos_ativos_count))
     st.metric("Recebido no Mês", f"R$ {total_recebido_mes:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
@@ -615,7 +613,7 @@ if modulo == "Resumo do Mês":
 
     if st.session_state.alunos:
         df_receita = pd.DataFrame([
-            {"Aluno": a["nome"], "Receita": float(a["valor_contrato"])}
+            {"Aluno": a["nome"], "Receita": float(a.get("valor_contrato", 0))}
             for a in st.session_state.alunos
         ])
         df_receita = df_receita.set_index("Aluno")
