@@ -9,6 +9,17 @@ st.set_page_config(
     layout="wide"
 )
 
+# Mapeamento dos dias da semana em português
+DIAS_SEMANA_MAP = {
+    0: "Segunda-feira",
+    1: "Terça-feira",
+    2: "Quarta-feira",
+    3: "Quinta-feira",
+    4: "Sexta-feira",
+    5: "Sábado",
+    6: "Domingo"
+}
+
 # Inicialização do estado da sessão com chaves padronizadas
 if "alunos" not in st.session_state:
     st.session_state.alunos = [
@@ -16,7 +27,7 @@ if "alunos" not in st.session_state:
             "nome": "João Silva", 
             "whatsapp": "(11) 98888-7777",
             "modalidade": "Presencial", 
-            "dia": "Domingo", 
+            "dia": "Terça-feira", 
             "horario": "11:00",
             "endereco": "Rua das Flores, 123 - São Paulo/SP",
             "valor_contrato": 3600.0, 
@@ -109,10 +120,9 @@ def formatar_horario(horario_str):
     return horario_str
 
 # -----------------------------------------------------------------------------
-# MÓDULO 1: ALUNOS E CONTRATOS (Otimizado Mobile com Cards)
+# MÓDULO 1: ALUNOS E CONTRATOS
 # -----------------------------------------------------------------------------
 if modulo == "👥 Alunos":
-    
     st.markdown("### 👥 Gestão de Alunos")
     
     if st.session_state.editando_idx is not None:
@@ -262,7 +272,6 @@ if modulo == "👥 Alunos":
     if not st.session_state.alunos:
         st.info("Nenhum aluno registrado.")
     else:
-        # Exibição otimizada em formato de Cards verticais para celular
         for idx, aluno in enumerate(st.session_state.alunos):
             with st.container(border=True):
                 st.markdown(f"**👤 {aluno['nome']}**")
@@ -373,11 +382,44 @@ if modulo == "👥 Alunos":
         st.info("Cadastre um aluno para gerar o contrato.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 2: AULAS
+# MÓDULO 2: AULAS (Com Agenda do Dia)
 # -----------------------------------------------------------------------------
 if modulo == "Aulas":
     st.markdown("### 📅 Módulo de Aulas")
     
+    # --- AGENDA DO DIA AUTOMÁTICA ---
+    hoje = datetime.date.today()
+    dia_semana_hoje = DIAS_SEMANA_MAP[hoje.weekday()]
+    data_formatada_hoje = hoje.strftime("%d/%m/%Y")
+    
+    st.markdown(f"##### 📌 Agenda de Hoje ({data_formatada_hoje} - {dia_semana_hoje})")
+    
+    alunos_hoje = [
+        a for a in st.session_state.get("alunos", []) 
+        if a.get("dia") == dia_semana_hoje and a.get("status_contrato") == "Ativo"
+    ]
+    
+    if alunos_hoje:
+        # Ordenar por horário
+        alunos_hoje_ordenados = sorted(alunos_hoje, key=lambda x: x.get("horario", ""))
+        for a in alunos_hoje_ordenados:
+            tipo_icone = "💻 Online" if a.get("modalidade") == "Online" else "🏠 Presencial"
+            with st.container(border=True):
+                col_h1, col_h2 = st.columns([1, 2])
+                with col_h1:
+                    st.markdown(f"⏰ **{a.get('horario')}**")
+                    st.caption(f"{tipo_icone}")
+                with col_h2:
+                    st.markdown(f"👤 **{a.get('nome')}**")
+                    if a.get("modalidade") == "Presencial" and a.get("endereco"):
+                        st.caption(f"📍 {a.get('endereco')}")
+                    st.caption(f"📱 {a.get('whatsapp')}")
+    else:
+        st.info(f"Nenhuma aula agendada para hoje ({dia_semana_hoje}).")
+
+    st.markdown("---")
+    
+    # --- REGISTRO DE AULAS REALIZADAS / CANCELADAS ---
     if not st.session_state.mostrar_form_registrar_aula:
         if st.button("➕ Registrar Aula", use_container_width=True):
             st.session_state.mostrar_form_registrar_aula = True
@@ -440,9 +482,9 @@ if modulo == "Aulas":
 
     col_m1, col_m2 = st.columns(2)
     with col_m1:
-        st.metric("Reposições", len(st.session_state.reposicoes_pendentes))
+        st.metric("Reposições Pendentes", len(st.session_state.reposicoes_pendentes))
     with col_m2:
-        st.metric("Custos", f"R$ {total_custos:.2f}")
+        st.metric("Custos do Mês", f"R$ {total_custos:.2f}")
 
     st.markdown("##### 📋 Histórico de Aulas")
     if st.session_state.historico_aulas:
@@ -451,7 +493,7 @@ if modulo == "Aulas":
                 st.markdown(f"**Aluno: {aula['aluno']}** ({aula['data']})")
                 st.text(f"Status: {aula['status']}")
                 if aula['obs']:
-                	st.text(f"Obs: {aula['obs']}")
+                    st.text(f"Obs: {aula['obs']}")
     else:
         st.info("Nenhuma aula registrada.")
 
