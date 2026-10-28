@@ -145,7 +145,7 @@ modulo = st.sidebar.radio(
     ]
 )
 
-def calcular_termino(inicio_str, vigencia_str):
+def calcular_termino_e_meses(inicio_str, plano_str):
     try:
         separador = "/"
         if "-" in inicio_str:
@@ -155,7 +155,7 @@ def calcular_termino(inicio_str, vigencia_str):
             
         partes = inicio_str.split(separador)
         if len(partes) != 3:
-            return inicio_str
+            return inicio_str, 12
             
         dia_i, mes_i, ano_i = int(partes[0]), int(partes[1]), int(partes[2])
         if ano_i < 100:
@@ -163,18 +163,24 @@ def calcular_termino(inicio_str, vigencia_str):
             
         data_inicio_obj = datetime.date(ano_i, mes_i, dia_i)
         
-        if vigencia_str == "6 meses":
+        if plano_str == "Mensal":
+            meses = 1
+            data_termino_obj = data_inicio_obj + datetime.timedelta(days=30)
+        elif plano_str == "Semestral":
+            meses = 6
             data_termino_obj = data_inicio_obj + datetime.timedelta(days=182)
-        else:
+        else: # Anual
+            meses = 12
             try:
                 data_termino_obj = data_inicio_obj.replace(year=data_inicio_obj.year + 1)
             except ValueError:
                 data_termino_obj = data_inicio_obj + datetime.timedelta(days=365)
                 
         ano_fmt = str(data_termino_obj.year)[-2:] if len(partes[2]) == 2 else str(data_termino_obj.year)
-        return f"{data_termino_obj.day:02d}{separador}{data_termino_obj.month:02d}{separador}{ano_fmt}"
+        termino_str = f"{data_termino_obj.day:02d}{separador}{data_termino_obj.month:02d}{separador}{ano_fmt}"
+        return termino_str, meses
     except:
-        return inicio_str
+        return inicio_str, 12
 
 def formatar_horario(horario_str):
     horario_limpo = "".join(filter(str.isdigit, str(horario_str)))
@@ -217,19 +223,25 @@ if modulo == "👥 Alunos":
             horario_digitos = st.text_input("Horário * (ex: 1100)", value=aluno_atual["horario"])
             endereco = st.text_input("Endereço Completo *", value=aluno_atual["endereco"])
             
-            vigencias_lista = ["6 meses", "1 ano"]
-            vig_idx = vigencias_lista.index(aluno_atual["vigencia"]) if aluno_atual["vigencia"] in vigencias_lista else 1
-            vigencia = st.selectbox("Vigência *", vigencias_lista, index=vig_idx)
+            planos_lista = ["Mensal", "Semestral", "Anual"]
+            # Compatibilidade com campo antigo 'vigencia' caso exista
+            vig_atual = aluno_atual.get("vigencia", "Anual")
+            if vig_atual == "6 meses":
+                vig_atual = "Semestral"
+            elif vig_atual == "1 ano":
+                vig_atual = "Anual"
+            plano_idx = planos_lista.index(vig_atual) if vig_atual in planos_lista else 2
+            
+            plano = st.selectbox("Plano contratado *", planos_lista, index=plano_idx)
             
             valor_mensal = st.number_input("Valor Mensal (R$) *", min_value=0.0, step=50.0, value=float(aluno_atual.get("valor_mensal", 0.0)))
             
-            meses = 6 if vigencia == "6 meses" else 12
-            valor_total_calc = valor_mensal * meses
-            st.info(f"💵 **Valor Total do Contrato (Soma do valor mensal): R$ {valor_total_calc:,.2f}**".replace(",", "X").replace(".", ",").replace("X", "."))
-            
             inicio_contrato = st.text_input("Início do Contrato * (ex: 25/10/26)", value=aluno_atual.get("inicio_contrato", "25/10/26"))
-            termino_contrato = calcular_termino(inicio_contrato, vigencia)
-            st.info(f"📅 Término Calculado: **{termino_contrato}**")
+            
+            termino_contrato, meses_calc = calcular_termino_e_meses(inicio_contrato, plano)
+            valor_total_calc = valor_mensal * meses_calc
+            
+            st.info(f"📅 Término Calculado: **{termino_contrato}** | 💵 **Valor Total do Contrato ({meses_calc} meses): R$ {valor_total_calc:,.2f}**".replace(",", "X").replace(".", ",").replace("X", "."))
             
             origens_lista = ["Selecione", "Instagram", "Indicação", "Facebook", "Outros"]
             origem_idx = origens_lista.index(aluno_atual["origem"]) if aluno_atual["origem"] in origens_lista else 0
@@ -274,7 +286,7 @@ if modulo == "👥 Alunos":
                         "rede_social": rede_social if rede_social else "Não informada",
                         "custo_transporte": transporte_final,
                         "status_contrato": status_contrato,
-                        "vigencia": vigencia,
+                        "vigencia": plano, # Armazenado no campo vigencia do banco
                     }
                     
                     if atualizar_aluno_banco(aluno_atual["id"], dados_atualizados):
@@ -310,17 +322,16 @@ if modulo == "👥 Alunos":
                 
                 horario_digitos = st.text_input("Horário * (ex: 1100)")
                 endereco = st.text_input("Endereço Completo *")
-                vigencia = st.selectbox("Vigência *", ["1 ano", "6 meses"])
+                
+                plano = st.selectbox("Plano contratado *", ["Mensal", "Semestral", "Anual"])
                 
                 valor_mensal = st.number_input("Valor Mensal (R$) *", min_value=0.0, step=50.0, value=0.0)
                 
-                meses = 6 if vigencia == "6 meses" else 12
-                valor_total_calc = valor_mensal * meses
-                st.info(f"💵 **Valor Total do Contrato (Soma do valor mensal): R$ {valor_total_calc:,.2f}**".replace(",", "X").replace(".", ",").replace("X", "."))
-                
                 inicio_contrato = st.text_input("Início do Contrato *", value="25/10/26")
-                termino_sugerido = calcular_termino(inicio_contrato, vigencia)
-                st.info(f"📅 Término Calculado: **{termino_sugerido}**")
+                termino_sugerido, meses_calc = calcular_termino_e_meses(inicio_contrato, plano)
+                valor_total_calc = valor_mensal * meses_calc
+                
+                st.info(f"📅 Término Calculado: **{termino_sugerido}** | 💵 **Valor Total ({meses_calc} meses): R$ {valor_total_calc:,.2f}**".replace(",", "X").replace(".", ",").replace("X", "."))
                 
                 origem = st.selectbox("Origem *", ["Selecione", "Instagram", "Indicação", "Facebook", "Outros"])
                 rede_social = st.text_input("Rede social (Opcional)")
@@ -354,7 +365,7 @@ if modulo == "👥 Alunos":
                             "rede_social": rede_social if rede_social else "Não informada",
                             "custo_transporte": transporte_final,
                             "status_contrato": status_contrato,
-                            "vigencia": vigencia,
+                            "vigencia": plano,
                             "aula_concluida": False
                         }
                         
@@ -394,11 +405,12 @@ if modulo == "👥 Alunos":
                 with st.expander("➕ Ver mais detalhes (Contrato, Valores e Ações)"):
                     val_mensal = float(aluno.get('valor_mensal', 0.0))
                     val_contrato = float(aluno.get('valor_contrato', 0.0))
+                    plano_exibir = aluno.get('vigencia', 'Anual')
                     
+                    st.text(f"📋 Plano: {plano_exibir}")
                     st.text(f"💵 Valor Mensal: R$ {val_mensal:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
                     st.text(f"💰 Valor Total do Contrato: R$ {val_contrato:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
                     st.text(f"📅 Início: {aluno.get('inicio_contrato', '')} | Término: {aluno.get('termino_contrato', '')}")
-                    st.text(f"⏳ Vigência: {aluno.get('vigencia', '')} | Origem: {aluno.get('origem', '')}")
                     st.text(f"🚗 Custo Transporte: R$ {float(aluno.get('custo_transporte', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
                     st.text(f"📌 Status: {aluno.get('status_contrato', '')}")
                     
@@ -474,11 +486,13 @@ if modulo == "👥 Alunos":
             mod_aluno = aluno_dados.get('modalidade', '')
             local_aula = aluno_dados.get('endereco', '') if mod_aluno == 'Presencial' else 'ambiente virtual (Online)'
             tempo_duracao = aluno_dados.get('tempo_aula', '1 hora')
+            horario_aula = aluno_dados.get('horario', '')
+            dia_aula_str = aluno_dados.get('dia', '')
             
             c1 = (
                 f"1.1. O presente contrato tem por objeto a prestação de serviços de aulas de {instrumento_aluno}, "
                 f"a serem ministradas pelo PROFESSOR em {local_aula}.\n"
-                f"1.1.1. As aulas ocorrerão semanalmente, às {aluno_dados.get('dia', '')} das {aluno_dados.get('horario', '')}.\n"
+                f"1.1.1. As aulas ocorrerão semanalmente, às {dia_aula_str} das {horario_aula}, com duração de {tempo_duracao}.\n"
                 f"1.1.2. Cada aula terá a duração de {tempo_duracao}, podendo existir tolerância de até 5 minutos para "
                 f"ajustes de início e término, sem prejuízo do conteúdo ministrado.\n"
                 f"1.1.3. Para a realização das aulas online, o CONTRATANTE declara-se ciente da necessidade de conexão "
@@ -497,11 +511,15 @@ if modulo == "👥 Alunos":
             pdf.set_font('Arial', '', 9.5)
             
             val_mensal = float(aluno_dados.get('valor_mensal', 0.0))
+            val_total = float(aluno_dados.get('valor_contrato', 0.0))
+            plano_escolhido = aluno_dados.get('vigencia', 'Anual')
             
             c2 = (
-                f"2.1. Para a prestação dos serviços, o CONTRATANTE escolhe o Plano Mensal no valor de R$ {val_mensal:.2f} "
-                f"(referente a 4 aulas no mês, uma por semana).\n"
-                f"2.1.1. No caso da escolha pelo Plano Mensal, para os meses que possuam mais de 4 (quatro) semanas, a última semana "
+                f"2.1. Para a prestação dos serviços, o CONTRATANTE escolhe o plano de aulas assinalado no quadro abaixo:\n"
+                f"• Plano Escolhido: {plano_escolhido}\n"
+                f"• Valor Mensal: R$ {val_mensal:.2f} (4 aulas no mês, uma por semana)\n"
+                f"• Valor Total do Contrato ({plano_escolhido}): R$ {val_total:.2f}\n\n"
+                f"2.1.1. No caso da escolha pelo Plano, para os meses que possuam mais de 4 (quatro) semanas, a última semana "
                 f"(correspondente à quinta aula) ficará vaga e livre para as partes, sendo mantido o valor do plano mensal indicado acima. "
                 f"Caso o CONTRATANTE manifeste interesse pela quinta aula no mês, e havendo disponibilidade do CONTRATADO, deverá o "
                 f"CONTRATANTE efetuar o pagamento do valor da aula avulsa no momento de sua manifestação.\n"
@@ -545,9 +563,8 @@ if modulo == "👥 Alunos":
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA QUINTA - RESCISÃO E MULTA", 0, 1)
             pdf.set_font('Arial', '', 9.5)
-            vigencia_str = aluno_dados.get('vigencia', '12 meses')
             c5 = (
-                f"5.1. O presente contrato é firmado pelo prazo de {vigencia_str} e, no caso de manifestação de vontade de encerramento, "
+                f"5.1. O presente contrato é firmado na modalidade de plano {plano_escolhido} e, no caso de manifestação de vontade de encerramento, "
                 f"o CONTRATANTE deverá notificar o CONTRATADO por escrito com no mínimo 30 dias de antecedência. O rompimento imediato "
                 f"implicará na aplicação de multa no montante de R$ 400,00 (quatrocentos reais)."
             )
