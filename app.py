@@ -29,6 +29,15 @@ DIAS_SEMANA_MAP = {
     6: "Domingo"
 }
 
+# --- FUNÇÃO PARA GERAR LINK DO WHATSAPP ---
+def formatar_link_whatsapp(numero_str):
+    digitos = "".join(filter(str.isdigit, str(numero_str)))
+    if not digitos:
+        return ""
+    if not digitos.startswith("55") and len(digitos) in [10, 11]:
+        digitos = f"55{digitos}"
+    return f"https://wa.me/{digitos}"
+
 # --- FUNÇÕES DE BANCO DE DADOS (SUPABASE) ---
 
 def carregar_alunos():
@@ -197,7 +206,6 @@ if modulo == "👥 Alunos":
             
             valor_mensal = st.number_input("Valor Mensal (R$) *", min_value=0.0, step=50.0, value=float(aluno_atual.get("valor_mensal", 0.0)))
             
-            # Cálculo automático do valor total do contrato
             meses = 6 if vigencia == "6 meses" else 12
             valor_total_calc = valor_mensal * meses
             st.info(f"💵 **Valor Total do Contrato (Soma do valor mensal): R$ {valor_total_calc:,.2f}**".replace(",", "X").replace(".", ",").replace("X", "."))
@@ -281,7 +289,6 @@ if modulo == "👥 Alunos":
                 
                 valor_mensal = st.number_input("Valor Mensal (R$) *", min_value=0.0, step=50.0, value=0.0)
                 
-                # Cálculo automático do valor total do contrato
                 meses = 6 if vigencia == "6 meses" else 12
                 valor_total_calc = valor_mensal * meses
                 st.info(f"💵 **Valor Total do Contrato (Soma do valor mensal): R$ {valor_total_calc:,.2f}**".replace(",", "X").replace(".", ",").replace("X", "."))
@@ -336,13 +343,19 @@ if modulo == "👥 Alunos":
     else:
         for idx, aluno in enumerate(st.session_state.alunos):
             with st.container(border=True):
-                # Visível direto: Nome, WhatsApp, Endereço e Aula
                 st.markdown(f"**👤 {aluno['nome']}**")
-                st.text(f"📱 WhatsApp: {aluno.get('whatsapp', '')}")
+                
+                # Link Clicável do WhatsApp
+                num_wa = aluno.get('whatsapp', '')
+                link_wa = formatar_link_whatsapp(num_wa)
+                if link_wa:
+                    st.markdown(f"📱 WhatsApp: [{num_wa}]({link_wa}) 🟢 *(clique para abrir conversa)*")
+                else:
+                    st.text(f"📱 WhatsApp: {num_wa}")
+
                 st.text(f"📍 Endereço: {aluno.get('endereco', 'Não informado')}")
                 st.text(f"🎸 Aula: {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
                 
-                # Detalhes ocultos no expander (Valores, Contrato e Ações)
                 with st.expander("➕ Ver mais detalhes (Contrato, Valores e Ações)"):
                     val_mensal = float(aluno.get('valor_mensal', 0.0))
                     val_contrato = float(aluno.get('valor_contrato', 0.0))
@@ -489,7 +502,13 @@ if modulo == "Aulas":
                     st.markdown(f"👤 **{a.get('nome')}**")
                     if a.get("modalidade") == "Presencial" and a.get("endereco"):
                         st.caption(f"📍 {a.get('endereco')}")
-                    st.caption(f"📱 {a.get('whatsapp')}")
+                    
+                    num_wa_h = a.get('whatsapp', '')
+                    link_wa_h = formatar_link_whatsapp(num_wa_h)
+                    if link_wa_h:
+                        st.markdown(f"📱 [{num_wa_h}]({link_wa_h})")
+                    else:
+                        st.caption(f"📱 {num_wa_h}")
     else:
         st.info(f"Nenhuma aula agendada para hoje ({dia_semana_hoje}).")
 
@@ -643,7 +662,7 @@ if modulo == "Financeiro":
                 st.markdown(f"**{pag['aluno']}** - R$ {float(pag.get('valor', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
                 st.text(f"Status: {pag['status']} | Vencimento: {pag.get('vencimento', '')}")
     else:
-        st.info("Nenum registro financeiro.")
+        st.info("Nenhum registro financeiro.")
 
 # -----------------------------------------------------------------------------
 # MÓDULO 4: RESUMO DO MÊS
