@@ -166,7 +166,7 @@ def formatar_horario(horario_str):
     return horario_str
 
 # -----------------------------------------------------------------------------
-# MÓDULO 1: ALUNOS E CONTRATOS
+# MÓDULO 1: ALUNOS E CONTRATOS (Com PDF Restaurado)
 # -----------------------------------------------------------------------------
 if modulo == "👥 Alunos":
     st.markdown("### 👥 Gestão de Alunos")
@@ -341,6 +341,98 @@ if modulo == "👥 Alunos":
                     if deletar_aluno_banco(aluno['id']):
                         st.success("Aluno removido!")
                         st.rerun()
+
+    st.markdown("---")
+    st.markdown("##### 📄 Gerar Contrato em PDF")
+    
+    if st.session_state.alunos:
+        nomes_alunos_pdf = [a["nome"] for a in st.session_state.alunos]
+        aluno_selecionado = st.selectbox("Selecione o aluno:", nomes_alunos_pdf, key="selectbox_gerar_contrato_pdf")
+        
+        aluno_dados = next(a for a in st.session_state.alunos if a["nome"] == aluno_selecionado)
+        nome_empresa = "Harmonia Escola de Música"
+        local_assinatura = "São Paulo, SP"
+        
+        inicio_fmt = aluno_dados.get('inicio_contrato', '___/___/______')
+        termino_fmt = aluno_dados.get('termino_contrato', '___/___/______')
+
+        from fpdf import FPDF
+
+        class PDF(FPDF):
+            def header(self):
+                self.set_font('Arial', 'B', 14)
+                self.cell(0, 10, 'CONTRATO DE PRESTACAO DE SERVICOS', 0, 1, 'C')
+                self.ln(5)
+
+            def footer(self):
+                self.set_y(-15)
+                self.set_font('Arial', 'I', 8)
+                self.cell(0, 10, f'Pagina {self.page_no()}', 0, 0, 'C')
+
+        def criar_pdf_contrato():
+            pdf = PDF()
+            pdf.add_page()
+            pdf.set_font('Arial', '', 11)
+            
+            pdf.cell(0, 8, f"CONTRATANTE: {aluno_dados['nome']}", 0, 1)
+            pdf.cell(0, 8, f"ENDERECO: {aluno_dados.get('endereco', '')}", 0, 1)
+            pdf.cell(0, 8, f"WHATSAPP: {aluno_dados.get('whatsapp', '')}", 0, 1)
+            pdf.cell(0, 8, f"CONTRATADA: {nome_empresa}", 0, 1)
+            pdf.ln(5)
+            
+            pdf.set_font('Arial', 'B', 11)
+            pdf.cell(0, 8, "CLÁUSULA 1ª - DO OBJETO", 0, 1)
+            pdf.set_font('Arial', '', 11)
+            
+            dia_aula = str(aluno_dados.get('dia', '')).lower()
+            if not dia_aula.startswith("aos"):
+                dia_aula = f"aos {dia_aula}"
+                
+            texto_obj = (f"O presente contrato tem por objeto a prestação de serviços de aulas de música "
+                         f"na modalidade {aluno_dados.get('modalidade', '')}, a serem realizadas {dia_aula} "
+                         f"às {aluno_dados.get('horario', '')} horas.")
+            pdf.multi_cell(0, 6, texto_obj)
+            pdf.ln(4)
+            
+            pdf.set_font('Arial', 'B', 11)
+            pdf.cell(0, 8, "CLÁUSULA 2ª - DA VIGÊNCIA E VALOR", 0, 1)
+            pdf.set_font('Arial', '', 11)
+            texto_vig = (f"O contrato terá a vigência de {aluno_dados.get('vigencia', '')}, com início em {inicio_fmt} "
+                         f"e término em {termino_fmt}. O valor total pactuado é de R$ {float(aluno_dados.get('valor_contrato', 0)):.2f}, "
+                         f"adimplido conforme o acordado entre as partes.")
+            pdf.multi_cell(0, 6, texto_vig)
+            pdf.ln(15)
+            
+            pdf.cell(0, 8, f"{local_assinatura}, _____ de _________________ de 20____.", 0, 1)
+            pdf.ln(25)
+            
+            pdf.cell(95, 6, "__________________________________", 0, 0, 'C')
+            pdf.cell(95, 6, "__________________________________", 0, 1, 'C')
+            pdf.cell(95, 6, "CONTRATANTE (Aluno)", 0, 0, 'C')
+            pdf.cell(95, 6, "CONTRATADA (Escola)", 0, 1, 'C')
+
+            saida = pdf.output(dest='S')
+            if isinstance(saida, bytes):
+                return saida
+            elif isinstance(saida, bytearray):
+                return bytes(saida)
+            elif isinstance(saida, str):
+                return saida.encode('latin-1')
+            else:
+                return bytes(saida)
+
+        pdf_bytes = criar_pdf_contrato()
+        
+        st.download_button(
+            label="📥 Baixar Contrato em PDF",
+            data=pdf_bytes,
+            file_name=f"contrato_{aluno_dados['nome'].replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            key="btn_baixar_contrato_direto",
+            use_container_width=True
+        )
+    else:
+        st.info("Cadastre um aluno para gerar o contrato.")
 
 # -----------------------------------------------------------------------------
 # MÓDULO 2: AULAS
