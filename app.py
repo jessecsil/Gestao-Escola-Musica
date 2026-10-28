@@ -115,7 +115,7 @@ with st.sidebar:
     try:
         st.image("logo.png", use_container_width=True)
     except:
-        st.markdown("### 🎸 Harmonia Música")
+        st.markdown("### 🎸 Escola de Música Geltera")
 
 st.sidebar.markdown("---")
 modulo = st.sidebar.radio(
@@ -168,8 +168,8 @@ def formatar_horario(horario_str):
 # -----------------------------------------------------------------------------
 # MÓDULO 1: ALUNOS E CONTRATOS (Com PDF Restaurado)
 # -----------------------------------------------------------------------------
-if modulo == "👥 Alunos":
-    st.markdown("### 👥 Gestão de Alunos")
+if modulo == "👥 Alunos/Contratos":
+    st.markdown("### Gestão de Alunos")
     
     if st.session_state.editando_idx is not None:
         idx_edit = st.session_state.editando_idx
@@ -201,7 +201,7 @@ if modulo == "👥 Alunos":
             termino_contrato = calcular_termino(inicio_contrato, vigencia)
             st.info(f"📅 Término Calculado: **{termino_contrato}**")
             
-            origens_lista = ["Selecione", "Instagram", "Indicação", "Facebook", "Outros"]
+            origens_lista = ["Selecione", "Instagram", "Indicação", "Facebook",]
             origem_idx = origens_lista.index(aluno_atual["origem"]) if aluno_atual["origem"] in origens_lista else 0
             origem = st.selectbox("Origem *", origens_lista, index=origem_idx)
             
@@ -274,7 +274,7 @@ if modulo == "👥 Alunos":
                 vigencia = st.selectbox("Vigência *", ["1 ano", "6 meses"])
                 valor_contrato = st.number_input("Valor do Contrato (R$) *", min_value=0.0, step=100.0, value=0.0)
                 
-                inicio_contrato = st.text_input("Início do Contrato *", value="25/10/26")
+                inicio_contrato = st.text_input("Início do Contrato *", value="dd/mm/aaaa")
                 termino_sugerido = calcular_termino(inicio_contrato, vigencia)
                 st.info(f"📅 Término Calculado: **{termino_sugerido}**")
                 
@@ -316,7 +316,7 @@ if modulo == "👥 Alunos":
                             st.rerun()
 
     st.markdown("---")
-    st.markdown("##### 📱 Alunos Cadastrados (Detalhes Completos)")
+    st.markdown("##### 📱 Alunos Cadastrados")
     
     if not st.session_state.alunos:
         st.info("Nenhum aluno registrado no banco de dados.")
@@ -324,14 +324,14 @@ if modulo == "👥 Alunos":
         for idx, aluno in enumerate(st.session_state.alunos):
             with st.container(border=True):
                 st.markdown(f"**👤 {aluno['nome']}**")
-                st.text(f"📱 WhatsApp: {aluno.get('whatsapp', '')}")
-                st.text(f"🎸 Aula: {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
-                st.text(f"📍 Endereço: {aluno.get('endereco', 'Não informado')}")
-                st.text(f"💰 Valor: R$ {float(aluno.get('valor_contrato', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-                st.text(f"📅 Início: {aluno.get('inicio_contrato', '')} | Término: {aluno.get('termino_contrato', '')}")
-                st.text(f"⏳ Vigência: {aluno.get('vigencia', '')} | Origem: {aluno.get('origem', '')}")
-                st.text(f"🚗 Custo Transporte: R$ {float(aluno.get('custo_transporte', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-                st.text(f"📌 Status: {aluno.get('status_contrato', '')}")
+                st.text(f"WhatsApp: {aluno.get('whatsapp', '')}")
+                st.text(f"Aula: {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
+                st.text(f"Endereço: {aluno.get('endereco', 'Não informado')}")
+                st.text(f"Valor: R$ {float(aluno.get('valor_contrato', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                st.text(f"Início: {aluno.get('inicio_contrato', '')} | Término: {aluno.get('termino_contrato', '')}")
+                st.text(f"Vigência: {aluno.get('vigencia', '')} | Origem: {aluno.get('origem', '')}")
+                st.text(f"Custo Transporte: R$ {float(aluno.get('custo_transporte', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                st.text(f"Status: {aluno.get('status_contrato', '')}")
                 
                 col_btn1, col_btn2 = st.columns(2)
                 if col_btn1.button("✏️ Editar", key=f"edit_{aluno['id']}", use_container_width=True):
@@ -343,14 +343,14 @@ if modulo == "👥 Alunos":
                         st.rerun()
 
     st.markdown("---")
-    st.markdown("##### 📄 Gerar Contrato em PDF")
+    st.markdown("##### Gerar Contrato em PDF")
     
     if st.session_state.alunos:
         nomes_alunos_pdf = [a["nome"] for a in st.session_state.alunos]
         aluno_selecionado = st.selectbox("Selecione o aluno:", nomes_alunos_pdf, key="selectbox_gerar_contrato_pdf")
         
         aluno_dados = next(a for a in st.session_state.alunos if a["nome"] == aluno_selecionado)
-        nome_empresa = "Harmonia Escola de Música"
+        nome_empresa = "Escola de Música"
         local_assinatura = "São Paulo, SP"
         
         inicio_fmt = aluno_dados.get('inicio_contrato', '___/___/______')
@@ -424,7 +424,7 @@ if modulo == "👥 Alunos":
         pdf_bytes = criar_pdf_contrato()
         
         st.download_button(
-            label="📥 Baixar Contrato em PDF",
+            label="Baixar Contrato em PDF",
             data=pdf_bytes,
             file_name=f"contrato_{aluno_dados['nome'].replace(' ', '_')}.pdf",
             mime="application/pdf",
@@ -438,7 +438,7 @@ if modulo == "👥 Alunos":
 # MÓDULO 2: AULAS
 # -----------------------------------------------------------------------------
 if modulo == "Aulas":
-    st.markdown("### 📅 Módulo de Aulas")
+    st.markdown("### Módulo de Aulas")
     
     hoje = datetime.date.today()
     dia_semana_hoje = DIAS_SEMANA_MAP[hoje.weekday()]
@@ -547,7 +547,7 @@ if modulo == "Aulas":
 # MÓDULO 3: FINANCEIRO
 # -----------------------------------------------------------------------------
 if modulo == "Financeiro":
-    st.markdown("### 💰 Módulo Financeiro")
+    st.markdown("### 💰 Financeiro")
     
     if not st.session_state.mostrar_form_registrar_pagamento:
         if st.button("➕ Registrar Pagamento", use_container_width=True):
