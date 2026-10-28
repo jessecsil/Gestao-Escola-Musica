@@ -19,7 +19,7 @@ try:
 except Exception as e:
     st.error("⚠️ Erro de conexão com o banco de dados. Verifique as chaves nos Secrets do Streamlit Cloud.")
 
-# Mapeamento dos dias da semana e meses em português
+# Mapeamento dos dias da semana e meses em português (com inicial maiúscula)
 DIAS_SEMANA_MAP = {
     0: "Segunda-feira",
     1: "Terça-feira",
@@ -31,9 +31,9 @@ DIAS_SEMANA_MAP = {
 }
 
 MESES_PT_MAP = {
-    1: "janeiro", 2: "fevereiro", 3: "março", 4: "abril",
-    5: "maio", 6: "junho", 7: "julho", 8: "agosto",
-    9: "setembro", 10: "outubro", 11: "novembro", 12: "dezembro"
+    1: "Janeiro", 2: "Fevereiro", 3: "Março", 4: "Abril",
+    5: "Maio", 6: "Junho", 7: "Julho", 8: "Agosto",
+    9: "Setembro", 10: "Outubro", 11: "Novembro", 12: "Dezembro"
 }
 
 # --- FUNÇÃO PARA GERAR LINK DO WHATSAPP ---
@@ -440,6 +440,12 @@ if modulo == "👥 Alunos":
         nome_professor = "GELTER LOURENÇO DA SILVA"
         rg_professor = "29.853.642-0"
         cnpj_professor = "24.195.286.0001-76"
+        banco_professor = "536"
+        agencia_professor = "0655"
+        conta_professor = "16954797-3"
+        dia_vencimento = "20"
+        multa_atraso = "5%"
+        prazo_atraso_dias = "15 (quinze)"
         endereco_professor = "Rua Guaraipo, no 46 Pq. Sevilha na cidade de São Paulo/SP"
         local_assinatura = "São Paulo, SP"
         
@@ -573,7 +579,7 @@ if modulo == "👥 Alunos":
             pdf.write(5, f"{val_total:.2f}\n\n")
             pdf.set_font('Arial', '', 9.5)
             
-            c2_resto = (
+            c2_p1 = (
                 f"2.1.1. No caso da escolha pelo Plano, para os meses que possuam mais de 4 (quatro) semanas, a última semana "
                 f"(correspondente à quinta aula) ficará vaga e livre para as partes, sendo mantido o valor do plano mensal indicado acima. "
                 f"Caso o CONTRATANTE manifeste interesse pela quinta aula no mês, e havendo disponibilidade do CONTRATADO, deverá o "
@@ -581,13 +587,44 @@ if modulo == "👥 Alunos":
                 f"2.1.2. No caso das aulas presenciais cujo deslocamento será realizado pelo CONTRATADO, o CONTRATANTE deverá realizar "
                 f"o pagamento dos valores relativos ao Plano escolhido, somado à Taxa de Deslocamento, a ser informada pelo CONTRATADO.\n"
                 f"2.2. O pagamento dos valores relativos ao plano escolhido deverá ser realizado na modalidade Pix para a chave: "
-                f"{cnpj_professor}, Banco 536, Agência 0655 e conta 16954797-3, até o dia 20 de cada mês, sendo certo que o atraso "
-                f"sem aviso prévio implicará na imediata suspensão da prestação dos serviços até a devida regularização ou renegociação. "
-                f"Se o atraso ultrapassar o prazo de 15 (quinze) dias corridos, incidirá multa de 5% ao dia.\n"
+            )
+            pdf.write(5, c2_p1)
+            
+            # Dados da chave Pix e Pagamento em Negrito na Cláusula 2.2
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{cnpj_professor}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", Banco ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{banco_professor}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", Agência ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{agencia_professor}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, " e conta ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{conta_professor}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", até o dia ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{dia_vencimento}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, " de cada mês, sendo certo que o atraso sem aviso prévio implicará na imediata suspensão da prestação dos serviços até a devida regularização ou renegociação. Se o atraso ultrapassar o prazo de ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{prazo_atraso_dias}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, " dias corridos, incidirá multa de ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{multa_atraso}")
+            pdf.set_font('Arial', '', 9.5)
+            
+            c2_p2 = (
+                f" ao dia.\n"
                 f"2.2.1. Para a comprovação do pagamento, o CONTRATANTE deverá enviar o comprovante ao CONTRATADO.\n"
                 f"2.2.2. No caso de inadimplemento e ausência de renegociação, o CONTRATADO tomará as medidas cabíveis em lei.\n\n"
             )
-            pdf.write(5, c2_resto)
+            pdf.write(5, c2_p2)
             
             # --- CLÁUSULA TERCEIRA ---
             pdf.set_font('Arial', 'B', 10)
@@ -652,6 +689,7 @@ if modulo == "👥 Alunos":
             pdf.write(5, c8)
             pdf.ln(5)
             
+            # Data com mês iniciando em letra maiúscula
             hoje_dt = datetime.date.today()
             dia_hoje = hoje_dt.day
             mes_hoje = MESES_PT_MAP[hoje_dt.month]
