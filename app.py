@@ -195,8 +195,17 @@ if modulo == "👥 Alunos":
         st.markdown(f"**Editando Aluno: {aluno_atual['nome']}**")
         with st.form("form_editar_aluno"):
             nome = st.text_input("Nome *", value=aluno_atual["nome"])
+            cpf = st.text_input("CPF * (ex: 000.000.000-00)", value=aluno_atual.get("cpf", ""))
             whatsapp = st.text_input("WhatsApp *", value=aluno_atual["whatsapp"])
             
+            instrumentos_lista = ["Violão", "Guitarra", "Baixo", "Teclado", "Cavaquinho"]
+            inst_idx = instrumentos_lista.index(aluno_atual.get("instrumento", "Violão")) if aluno_atual.get("instrumento", "Violão") in instrumentos_lista else 0
+            instrumento = st.selectbox("Instrumento / Tipo de Aula *", instrumentos_lista, index=inst_idx)
+            
+            tempos_lista = ["1 hora", "45 minutos", "30 minutos", "1 hora e 30 minutos"]
+            tempo_idx = tempos_lista.index(aluno_atual.get("tempo_aula", "1 hora")) if aluno_atual.get("tempo_aula", "1 hora") in tempos_lista else 0
+            tempo_aula = st.selectbox("Tempo de Duração da Aula *", tempos_lista, index=tempo_idx)
+
             modalidades_lista = ["Selecione", "Presencial", "Online"]
             mod_idx = modalidades_lista.index(aluno_atual["modalidade"]) if aluno_atual["modalidade"] in modalidades_lista else 0
             modalidade = st.selectbox("Modalidade *", modalidades_lista, index=mod_idx)
@@ -241,15 +250,18 @@ if modulo == "👥 Alunos":
                 st.rerun()
                 
             if submit_edicao:
-                if not nome.strip() or modalidade == "Selecione" or dia == "Selecione" or valor_mensal <= 0.0:
-                    st.error("❌ Preencha os campos obrigatórios.")
+                if not nome.strip() or not cpf.strip() or modalidade == "Selecione" or dia == "Selecione" or valor_mensal <= 0.0:
+                    st.error("❌ Preencha os campos obrigatórios (Nome, CPF, etc.).")
                 else:
                     horario_formatado = formatar_horario(horario_digitos)
                     transporte_final = 0.0 if modalidade == "Online" else custo_transporte
 
                     dados_atualizados = {
                         "nome": nome,
+                        "cpf": cpf,
                         "whatsapp": whatsapp,
+                        "instrumento": instrumento,
+                        "tempo_aula": tempo_aula,
                         "modalidade": modalidade,
                         "dia": dia,
                         "horario": horario_formatado,
@@ -285,7 +297,12 @@ if modulo == "👥 Alunos":
                 st.markdown("**Cadastrar Novo Aluno:**")
                 
                 nome = st.text_input("Nome *")
+                cpf = st.text_input("CPF * (ex: 000.000.000-00)")
                 whatsapp = st.text_input("WhatsApp *")
+                
+                instrumento = st.selectbox("Instrumento / Tipo de Aula *", ["Violão", "Guitarra", "Baixo", "Teclado", "Cavaquinho"])
+                tempo_aula = st.selectbox("Tempo de Duração da Aula *", ["1 hora", "45 minutos", "30 minutos", "1 hora e 30 minutos"])
+                
                 modalidade = st.selectbox("Modalidade *", ["Selecione", "Presencial", "Online"])
                 
                 dias_semana = ["Selecione", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"]
@@ -313,15 +330,18 @@ if modulo == "👥 Alunos":
                 submit = st.form_submit_button("Salvar Aluno", use_container_width=True)
                 
                 if submit:
-                    if not nome.strip() or modalidade == "Selecione" or dia == "Selecione" or valor_mensal <= 0.0:
-                        st.error("❌ Preencha os campos obrigatórios.")
+                    if not nome.strip() or not cpf.strip() or modalidade == "Selecione" or dia == "Selecione" or valor_mensal <= 0.0:
+                        st.error("❌ Preencha os campos obrigatórios (Nome, CPF, etc.).")
                     else:
                         horario_formatado = formatar_horario(horario_digitos)
                         transporte_final = 0.0 if modalidade == "Online" else custo_transporte
 
                         novo_aluno = {
                             "nome": nome,
+                            "cpf": cpf,
                             "whatsapp": whatsapp,
+                            "instrumento": instrumento,
+                            "tempo_aula": tempo_aula,
                             "modalidade": modalidade,
                             "dia": dia,
                             "horario": horario_formatado,
@@ -351,7 +371,7 @@ if modulo == "👥 Alunos":
     else:
         for idx, aluno in enumerate(st.session_state.alunos):
             with st.container(border=True):
-                st.markdown(f"**👤 {aluno['nome']}**")
+                st.markdown(f"**👤 {aluno['nome']}** (CPF: {aluno.get('cpf', 'Não informado')})")
                 
                 num_wa = aluno.get('whatsapp', '')
                 link_wa = formatar_link_whatsapp(num_wa)
@@ -367,7 +387,9 @@ if modulo == "👥 Alunos":
                 else:
                     st.text(f"📍 Endereço: {end_aluno}")
 
-                st.text(f"🎸 Aula: {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
+                inst_exibir = aluno.get('instrumento', 'Violão')
+                tempo_exibir = aluno.get('tempo_aula', '1 hora')
+                st.text(f"🎸 Aula de {inst_exibir} ({tempo_exibir}): {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
                 
                 with st.expander("➕ Ver mais detalhes (Contrato, Valores e Ações)"):
                     val_mensal = float(aluno.get('valor_mensal', 0.0))
@@ -398,7 +420,6 @@ if modulo == "👥 Alunos":
         
         aluno_dados = next(a for a in st.session_state.alunos if a["nome"] == aluno_selecionado)
         
-        # Dados fixos do contratado conforme o anexo
         nome_professor = "GELTER LOURENÇO DA SILVA"
         rg_professor = "29.853.642-0"
         cnpj_professor = "24.195.286.0001-76"
@@ -412,8 +433,9 @@ if modulo == "👥 Alunos":
 
         class PDF(FPDF):
             def header(self):
+                instrumento_titulo = aluno_dados.get('instrumento', 'Violão').upper()
                 self.set_font('Arial', 'B', 12)
-                self.cell(0, 8, 'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE AULAS DE VIOLÃO', 0, 1, 'C')
+                self.cell(0, 8, f'CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE AULAS DE {instrumento_titulo}', 0, 1, 'C')
                 self.ln(4)
 
             def footer(self):
@@ -426,12 +448,16 @@ if modulo == "👥 Alunos":
             pdf.add_page()
             pdf.set_font('Arial', '', 9.5)
             
-            # Preâmbulo
+            instrumento_aluno = aluno_dados.get('instrumento', 'Violão')
+            cpf_aluno = aluno_dados.get('cpf', '_________________')
+            
+            # Preâmbulo com CPF
             preambulo = (
                 f"Pelo presente instrumento particular, de um lado, {aluno_dados['nome']}, "
-                f"residente e domiciliado na {aluno_dados.get('endereco', '')}, "
-                f"telefone {aluno_dados.get('whatsapp', '')}, doravante denominado CONTRATANTE e, de outro lado, "
-                f"{nome_professor}, brasileiro, casado, (Autônomo) Violonista e Professor de violão, "
+                f"inscrito(a) no CPF sob o nº {cpf_aluno}, "
+                f"residente e domiciliado(a) na {aluno_dados.get('endereco', '')}, "
+                f"telefone {aluno_dados.get('whatsapp', '')}, doravante denominado(a) CONTRATANTE e, de outro lado, "
+                f"{nome_professor}, brasileiro, casado, (Autônomo) Músico e Professor, "
                 f"portador da cédula de identidade RG sob nº {rg_professor} e inscrito no CNPJ sob nº {cnpj_professor}, "
                 f"residente e domiciliado na {endereco_professor}, doravante denominado CONTRATADO.\n\n"
                 f"CONTRATANTE e CONTRATADO têm entre si, justo e contratado o presente contrato, que se regerá pelas "
@@ -447,18 +473,19 @@ if modulo == "👥 Alunos":
             
             mod_aluno = aluno_dados.get('modalidade', '')
             local_aula = aluno_dados.get('endereco', '') if mod_aluno == 'Presencial' else 'ambiente virtual (Online)'
+            tempo_duracao = aluno_dados.get('tempo_aula', '1 hora')
             
             c1 = (
-                f"1.1. O presente contrato tem por objeto a prestação de serviços de aulas de Violão, "
+                f"1.1. O presente contrato tem por objeto a prestação de serviços de aulas de {instrumento_aluno}, "
                 f"a serem ministradas pelo PROFESSOR em {local_aula}.\n"
                 f"1.1.1. As aulas ocorrerão semanalmente, às {aluno_dados.get('dia', '')} das {aluno_dados.get('horario', '')}.\n"
-                f"1.1.2. Cada aula terá duração aproximada de uma hora, podendo existir tolerância de até 5 minutos para "
+                f"1.1.2. Cada aula terá a duração de {tempo_duracao}, podendo existir tolerância de até 5 minutos para "
                 f"ajustes de início e término, sem prejuízo do conteúdo ministrado.\n"
                 f"1.1.3. Para a realização das aulas online, o CONTRATANTE declara-se ciente da necessidade de conexão "
                 f"estável com a internet e de espaço sem ruídos ou interferências externas, visando o melhor aproveitamento das aulas.\n"
                 f"1.1.4. Para a realização das aulas presenciais, as partes devem comparecer ao local acordado com no mínimo 10 "
                 f"(dez) minutos de antecedência, sendo certo que o atraso por parte do CONTRATANTE não será compensado posteriormente à aula agendada.\n"
-                f"1.1.5. As aulas ministradas pelo CONTRATADO terão duração de 1 hora (uma hora).\n"
+                f"1.1.5. As aulas ministradas pelo CONTRATADO terão a duração firmada de {tempo_duracao}.\n"
                 f"1.1.6. Sempre e assim que possível, o CONTRATADO prestará suporte via WhatsApp (horário comercial) para o esclarecimento de dúvidas do CONTRATANTE."
             )
             pdf.multi_cell(0, 5, c1)
@@ -470,13 +497,12 @@ if modulo == "👥 Alunos":
             pdf.set_font('Arial', '', 9.5)
             
             val_mensal = float(aluno_dados.get('valor_mensal', 0.0))
-            val_total = float(aluno_dados.get('valor_contrato', 0.0))
             
             c2 = (
                 f"2.1. Para a prestação dos serviços, o CONTRATANTE escolhe o Plano Mensal no valor de R$ {val_mensal:.2f} "
                 f"(referente a 4 aulas no mês, uma por semana).\n"
                 f"2.1.1. No caso da escolha pelo Plano Mensal, para os meses que possuam mais de 4 (quatro) semanas, a última semana "
-                f"(correspondente à quinta aula) ficará vaga e livre para das partes, sendo mantido o valor do plano mensal indicado acima. "
+                f"(correspondente à quinta aula) ficará vaga e livre para as partes, sendo mantido o valor do plano mensal indicado acima. "
                 f"Caso o CONTRATANTE manifeste interesse pela quinta aula no mês, e havendo disponibilidade do CONTRATADO, deverá o "
                 f"CONTRATANTE efetuar o pagamento do valor da aula avulsa no momento de sua manifestação.\n"
                 f"2.1.2. No caso das aulas presenciais cujo deslocamento será realizado pelo CONTRATADO, o CONTRATANTE deverá realizar "
@@ -583,7 +609,7 @@ if modulo == "👥 Alunos":
         pdf_bytes = criar_pdf_contrato()
         
         st.download_button(
-            label="📥 Baixar Contrato em PDF (Modelo Oficial)",
+            label="📥 Baixar Contrato em PDF (Oficial)",
             data=pdf_bytes,
             file_name=f"contrato_{aluno_dados['nome'].replace(' ', '_')}.pdf",
             mime="application/pdf",
@@ -620,7 +646,7 @@ if modulo == "Aulas":
                     st.markdown(f"⏰ **{a.get('horario')}**")
                     st.caption(f"{tipo_icone}")
                 with col_h2:
-                    st.markdown(f"👤 **{a.get('nome')}**")
+                    st.markdown(f"👤 **{a.get('nome')}** ({a.get('instrumento', 'Violão')})")
                     
                     end_h = a.get('endereco', '')
                     link_waze_h = formatar_link_waze(end_h)
