@@ -224,7 +224,6 @@ if modulo == "👥 Alunos":
             endereco = st.text_input("Endereço Completo *", value=aluno_atual["endereco"])
             
             planos_lista = ["Mensal", "Semestral", "Anual"]
-            # Compatibilidade com campo antigo 'vigencia' caso exista
             vig_atual = aluno_atual.get("vigencia", "Anual")
             if vig_atual == "6 meses":
                 vig_atual = "Semestral"
@@ -286,7 +285,7 @@ if modulo == "👥 Alunos":
                         "rede_social": rede_social if rede_social else "Não informada",
                         "custo_transporte": transporte_final,
                         "status_contrato": status_contrato,
-                        "vigencia": plano, # Armazenado no campo vigencia do banco
+                        "vigencia": plano,
                     }
                     
                     if atualizar_aluno_banco(aluno_atual["id"], dados_atualizados):
@@ -463,7 +462,6 @@ if modulo == "👥 Alunos":
             instrumento_aluno = aluno_dados.get('instrumento', 'Violão')
             cpf_aluno = aluno_dados.get('cpf', '_________________')
             
-            # Preâmbulo com CPF
             preambulo = (
                 f"Pelo presente instrumento particular, de um lado, {aluno_dados['nome']}, "
                 f"inscrito(a) no CPF sob o nº {cpf_aluno}, "
@@ -505,7 +503,7 @@ if modulo == "👥 Alunos":
             pdf.multi_cell(0, 5, c1)
             pdf.ln(3)
             
-            # CLÁUSULA SEGUNDA
+            # CLÁUSULA SEGUNDA (Sem o caractere • para evitar erro de codificação)
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA SEGUNDA - DO PLANO DAS AULAS, VALORES E FORMA DE PAGAMENTO", 0, 1)
             pdf.set_font('Arial', '', 9.5)
@@ -515,10 +513,10 @@ if modulo == "👥 Alunos":
             plano_escolhido = aluno_dados.get('vigencia', 'Anual')
             
             c2 = (
-                f"2.1. Para a prestação dos serviços, o CONTRATANTE escolhe o plano de aulas assinalado no quadro abaixo:\n"
-                f"• Plano Escolhido: {plano_escolhido}\n"
-                f"• Valor Mensal: R$ {val_mensal:.2f} (4 aulas no mês, uma por semana)\n"
-                f"• Valor Total do Contrato ({plano_escolhido}): R$ {val_total:.2f}\n\n"
+                f"2.1. Para a prestação dos serviços, o CONTRATANTE escolhe o plano de aulas abaixo:\n"
+                f"- Plano Escolhido: {plano_escolhido}\n"
+                f"- Valor Mensal: R$ {val_mensal:.2f} (4 aulas no mês, uma por semana)\n"
+                f"- Valor Total do Contrato ({plano_escolhido}): R$ {val_total:.2f}\n\n"
                 f"2.1.1. No caso da escolha pelo Plano, para os meses que possuam mais de 4 (quatro) semanas, a última semana "
                 f"(correspondente à quinta aula) ficará vaga e livre para as partes, sendo mantido o valor do plano mensal indicado acima. "
                 f"Caso o CONTRATANTE manifeste interesse pela quinta aula no mês, e havendo disponibilidade do CONTRATADO, deverá o "
