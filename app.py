@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import urllib.parse
 from supabase import create_client, Client
 
 # Configuração da página
@@ -37,6 +38,13 @@ def formatar_link_whatsapp(numero_str):
     if not digitos.startswith("55") and len(digitos) in [10, 11]:
         digitos = f"55{digitos}"
     return f"https://wa.me/{digitos}"
+
+# --- FUNÇÃO PARA GERAR LINK DO WAZE ---
+def formatar_link_waze(endereco_str):
+    if not endereco_str or endereco_str.lower() == "não informado":
+        return ""
+    endereco_codificado = urllib.parse.quote(endereco_str)
+    return f"https://waze.com/ul?q={endereco_codificado}&navigate=yes"
 
 # --- FUNÇÕES DE BANCO DE DADOS (SUPABASE) ---
 
@@ -345,15 +353,22 @@ if modulo == "👥 Alunos":
             with st.container(border=True):
                 st.markdown(f"**👤 {aluno['nome']}**")
                 
-                # Link Clicável do WhatsApp
+                # WhatsApp com link clicável
                 num_wa = aluno.get('whatsapp', '')
                 link_wa = formatar_link_whatsapp(num_wa)
                 if link_wa:
-                    st.markdown(f"📱 WhatsApp: [{num_wa}]({link_wa}) 🟢 *(clique para abrir conversa)*")
+                    st.markdown(f"📱 WhatsApp: [{num_wa}]({link_wa}) 🟢")
                 else:
                     st.text(f"📱 WhatsApp: {num_wa}")
 
-                st.text(f"📍 Endereço: {aluno.get('endereco', 'Não informado')}")
+                # Endereço com link clicável para o Waze
+                end_aluno = aluno.get('endereco', 'Não informado')
+                link_waze = formatar_link_waze(end_aluno)
+                if link_waze:
+                    st.markdown(f"📍 Endereço: [{end_aluno}]({link_waze}) 🚗 *(clique para abrir no Waze)*")
+                else:
+                    st.text(f"📍 Endereço: {end_aluno}")
+
                 st.text(f"🎸 Aula: {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
                 
                 with st.expander("➕ Ver mais detalhes (Contrato, Valores e Ações)"):
@@ -500,9 +515,14 @@ if modulo == "Aulas":
                     st.caption(f"{tipo_icone}")
                 with col_h2:
                     st.markdown(f"👤 **{a.get('nome')}**")
-                    if a.get("modalidade") == "Presencial" and a.get("endereco"):
-                        st.caption(f"📍 {a.get('endereco')}")
                     
+                    end_h = a.get('endereco', '')
+                    link_waze_h = formatar_link_waze(end_h)
+                    if a.get("modalidade") == "Presencial" and link_waze_h:
+                        st.markdown(f"📍 [{end_h}]({link_waze_h})")
+                    elif end_h:
+                        st.caption(f"📍 {end_h}")
+                        
                     num_wa_h = a.get('whatsapp', '')
                     link_wa_h = formatar_link_whatsapp(num_wa_h)
                     if link_wa_h:
