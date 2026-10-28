@@ -31,7 +31,6 @@ DIAS_SEMANA_MAP = {
 
 # --- FUNÇÕES DE BANCO DE DADOS (SUPABASE) ---
 
-# 1. ALUNOS
 def carregar_alunos():
     try:
         res = supabase.table("alunos").select("*").order("nome").execute()
@@ -63,7 +62,6 @@ def deletar_aluno_banco(aluno_id):
         st.error(f"Erro ao deletar aluno: {e}")
         return False
 
-# 2. AULAS
 def carregar_aulas():
     try:
         res = supabase.table("aulas").select("*").order("created_at", desc=True).execute()
@@ -79,7 +77,6 @@ def salvar_aula_banco(dados):
         st.error(f"Erro ao salvar aula: {e}")
         return False
 
-# 3. FINANCEIRO
 def carregar_financeiro():
     try:
         res = supabase.table("financeiro").select("*").order("created_at", desc=True).execute()
@@ -319,7 +316,7 @@ if modulo == "👥 Alunos":
                             st.rerun()
 
     st.markdown("---")
-    st.markdown("##### 📱 Alunos Cadastrados")
+    st.markdown("##### 📱 Alunos Cadastrados (Detalhes Completos)")
     
     if not st.session_state.alunos:
         st.info("Nenhum aluno registrado no banco de dados.")
@@ -329,7 +326,11 @@ if modulo == "👥 Alunos":
                 st.markdown(f"**👤 {aluno['nome']}**")
                 st.text(f"📱 WhatsApp: {aluno.get('whatsapp', '')}")
                 st.text(f"🎸 Aula: {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
+                st.text(f"📍 Endereço: {aluno.get('endereco', 'Não informado')}")
                 st.text(f"💰 Valor: R$ {float(aluno.get('valor_contrato', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                st.text(f"📅 Início: {aluno.get('inicio_contrato', '')} | Término: {aluno.get('termino_contrato', '')}")
+                st.text(f"⏳ Vigência: {aluno.get('vigencia', '')} | Origem: {aluno.get('origem', '')}")
+                st.text(f"🚗 Custo Transporte: R$ {float(aluno.get('custo_transporte', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
                 st.text(f"📌 Status: {aluno.get('status_contrato', '')}")
                 
                 col_btn1, col_btn2 = st.columns(2)
@@ -342,7 +343,7 @@ if modulo == "👥 Alunos":
                         st.rerun()
 
 # -----------------------------------------------------------------------------
-# MÓDULO 2: AULAS (INTEGRADO AO SUPABASE)
+# MÓDULO 2: AULAS
 # -----------------------------------------------------------------------------
 if modulo == "Aulas":
     st.markdown("### 📅 Módulo de Aulas")
@@ -425,7 +426,7 @@ if modulo == "Aulas":
                     
                     if salvar_aula_banco(nova_aula):
                         st.session_state.mostrar_form_registrar_aula = False
-                        st.success("Aula registrada no banco de dados!")
+                        st.success("Aula registrada!")
                         st.rerun()
 
     st.markdown("---")
@@ -451,7 +452,7 @@ if modulo == "Aulas":
         st.info("Nenhuma aula registrada.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 3: FINANCEIRO (INTEGRADO AO SUPABASE)
+# MÓDULO 3: FINANCEIRO
 # -----------------------------------------------------------------------------
 if modulo == "Financeiro":
     st.markdown("### 💰 Módulo Financeiro")
@@ -502,7 +503,7 @@ if modulo == "Financeiro":
                     
                     if salvar_pagamento_banco(novo_pagamento):
                         st.session_state.mostrar_form_registrar_pagamento = False
-                        st.success("Pagamento registrado no banco de dados!")
+                        st.success("Pagamento registrado!")
                         st.rerun()
 
     st.markdown("---")
@@ -525,10 +526,10 @@ if modulo == "Financeiro":
                 st.markdown(f"**{pag['aluno']}** - R$ {float(pag.get('valor', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
                 st.text(f"Status: {pag['status']} | Vencimento: {pag.get('vencimento', '')}")
     else:
-        st.info("Nenhum registro financeiro no banco de dados.")
+        st.info("Nenhum registro financeiro.")
 
 # -----------------------------------------------------------------------------
-# MÓDULO 4: RESUMO DO MÊS (INTEGRADO AO SUPABASE)
+# MÓDULO 4: RESUMO DO MÊS
 # -----------------------------------------------------------------------------
 if modulo == "Resumo do Mês":
     st.markdown("### 📈 Resumo do Mês")
