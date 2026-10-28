@@ -19,7 +19,7 @@ try:
 except Exception as e:
     st.error("⚠️ Erro de conexão com o banco de dados. Verifique as chaves nos Secrets do Streamlit Cloud.")
 
-# Mapeamento dos dias da semana em português
+# Mapeamento dos dias da semana e meses em português
 DIAS_SEMANA_MAP = {
     0: "Segunda-feira",
     1: "Terça-feira",
@@ -28,6 +28,12 @@ DIAS_SEMANA_MAP = {
     4: "Sexta-feira",
     5: "Sábado",
     6: "Domingo"
+}
+
+MESES_PT_MAP = {
+    1: "janeiro", 2: "fevereiro", 3: "março", 4: "abril",
+    5: "maio", 6: "junho", 7: "julho", 8: "agosto",
+    9: "setembro", 10: "outubro", 11: "novembro", 12: "dezembro"
 }
 
 # --- FUNÇÃO PARA GERAR LINK DO WHATSAPP ---
@@ -461,22 +467,46 @@ if modulo == "👥 Alunos":
             
             instrumento_aluno = aluno_dados.get('instrumento', 'Violão')
             cpf_aluno = aluno_dados.get('cpf', '_________________')
+            nome_aluno = aluno_dados['nome']
+            endereco_aluno = aluno_dados.get('endereco', '')
+            whatsapp_aluno = aluno_dados.get('whatsapp', '')
             
-            preambulo = (
-                f"Pelo presente instrumento particular, de um lado, {aluno_dados['nome']}, "
-                f"inscrito(a) no CPF sob o nº {cpf_aluno}, "
-                f"residente e domiciliado(a) na {aluno_dados.get('endereco', '')}, "
-                f"telefone {aluno_dados.get('whatsapp', '')}, doravante denominado(a) CONTRATANTE e, de outro lado, "
-                f"{nome_professor}, brasileiro, casado, (Autônomo) Músico e Professor, "
-                f"portador da cédula de identidade RG sob nº {rg_professor} e inscrito no CNPJ sob nº {cnpj_professor}, "
-                f"residente e domiciliado na {endereco_professor}, doravante denominado CONTRATADO.\n\n"
-                f"CONTRATANTE e CONTRATADO têm entre si, justo e contratado o presente contrato, que se regerá pelas "
-                f"seguintes Cláusulas e Condições, que abaixo livremente estipulam, obrigando-se a cumpri-las por si:"
-            )
-            pdf.multi_cell(0, 5, preambulo)
-            pdf.ln(3)
+            # --- PREÁMBULO COM DADOS EM NEGRITO ---
+            pdf.write(5, "Pelo presente instrumento particular, de um lado, ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{nome_aluno}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", inscrito(a) no CPF sob o nº ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{cpf_aluno}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", residente e domiciliado(a) na ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{endereco_aluno}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", telefone ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{whatsapp_aluno}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", doravante denominado(a) CONTRATANTE e, de outro lado, ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{nome_professor}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", brasileiro, casado, (Autônomo) Músico e Professor, portador da cédula de identidade RG sob nº ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{rg_professor}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, " e inscrito no CNPJ sob nº ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{cnpj_professor}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", residente e domiciliado na ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{endereco_professor}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", doravante denominado CONTRATADO.\n\nCONTRATANTE e CONTRATADO têm entre si, justo e contratado o presente contrato, que se regerá pelas seguintes Cláusulas e Condições, que abaixo livremente estipulam, obrigando-se a cumpri-las por si:\n\n")
             
-            # CLÁUSULA PRIMEIRA
+            # --- CLÁUSULA PRIMEIRA ---
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA PRIMEIRA - DO OBJETO", 0, 1)
             pdf.set_font('Arial', '', 9.5)
@@ -487,10 +517,25 @@ if modulo == "👥 Alunos":
             horario_aula = aluno_dados.get('horario', '')
             dia_aula_str = aluno_dados.get('dia', '')
             
-            c1 = (
-                f"1.1. O presente contrato tem por objeto a prestação de serviços de aulas de {instrumento_aluno}, "
-                f"a serem ministradas pelo PROFESSOR em {local_aula}.\n"
-                f"1.1.1. As aulas ocorrerão semanalmente, às {dia_aula_str} das {horario_aula}, com duração de {tempo_duracao}.\n"
+            pdf.write(5, "1.1. O presente contrato tem por objeto a prestação de serviços de aulas de ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{instrumento_aluno}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", a serem ministradas pelo PROFESSOR em ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{local_aula}.\n")
+            pdf.set_font('Arial', '', 9.5)
+            
+            pdf.write(5, "1.1.1. As aulas ocorrerão semanalmente, às ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{dia_aula_str} das {horario_aula}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, ", com duração de ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{tempo_duracao}.\n")
+            pdf.set_font('Arial', '', 9.5)
+            
+            c1_resto = (
                 f"1.1.2. Cada aula terá a duração de {tempo_duracao}, podendo existir tolerância de até 5 minutos para "
                 f"ajustes de início e término, sem prejuízo do conteúdo ministrado.\n"
                 f"1.1.3. Para a realização das aulas online, o CONTRATANTE declara-se ciente da necessidade de conexão "
@@ -498,12 +543,11 @@ if modulo == "👥 Alunos":
                 f"1.1.4. Para a realização das aulas presenciais, as partes devem comparecer ao local acordado com no mínimo 10 "
                 f"(dez) minutos de antecedência, sendo certo que o atraso por parte do CONTRATANTE não será compensado posteriormente à aula agendada.\n"
                 f"1.1.5. As aulas ministradas pelo CONTRATADO terão a duração firmada de {tempo_duracao}.\n"
-                f"1.1.6. Sempre e assim que possível, o CONTRATADO prestará suporte via WhatsApp (horário comercial) para o esclarecimento de dúvidas do CONTRATANTE."
+                f"1.1.6. Sempre e assim que possível, o CONTRATADO prestará suporte via WhatsApp (horário comercial) para o esclarecimento de dúvidas do CONTRATANTE.\n\n"
             )
-            pdf.multi_cell(0, 5, c1)
-            pdf.ln(3)
+            pdf.write(5, c1_resto)
             
-            # CLÁUSULA SEGUNDA (Sem o caractere • para evitar erro de codificação)
+            # --- CLÁUSULA SEGUNDA ---
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA SEGUNDA - DO PLANO DAS AULAS, VALORES E FORMA DE PAGAMENTO", 0, 1)
             pdf.set_font('Arial', '', 9.5)
@@ -512,11 +556,24 @@ if modulo == "👥 Alunos":
             val_total = float(aluno_dados.get('valor_contrato', 0.0))
             plano_escolhido = aluno_dados.get('vigencia', 'Anual')
             
-            c2 = (
-                f"2.1. Para a prestação dos serviços, o CONTRATANTE escolhe o plano de aulas abaixo:\n"
-                f"- Plano Escolhido: {plano_escolhido}\n"
-                f"- Valor Mensal: R$ {val_mensal:.2f} (4 aulas no mês, uma por semana)\n"
-                f"- Valor Total do Contrato ({plano_escolhido}): R$ {val_total:.2f}\n\n"
+            pdf.write(5, "2.1. Para a prestação dos serviços, o CONTRATANTE escolhe o plano de aulas abaixo:\n- Plano Escolhido: ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{plano_escolhido}\n")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, "- Valor Mensal: R$ ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{val_mensal:.2f}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, " (4 aulas no mês, uma por semana)\n- Valor Total do Contrato (")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{plano_escolhido}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, "): R$ ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{val_total:.2f}\n\n")
+            pdf.set_font('Arial', '', 9.5)
+            
+            c2_resto = (
                 f"2.1.1. No caso da escolha pelo Plano, para os meses que possuam mais de 4 (quatro) semanas, a última semana "
                 f"(correspondente à quinta aula) ficará vaga e livre para as partes, sendo mantido o valor do plano mensal indicado acima. "
                 f"Caso o CONTRATANTE manifeste interesse pela quinta aula no mês, e havendo disponibilidade do CONTRATADO, deverá o "
@@ -528,12 +585,11 @@ if modulo == "👥 Alunos":
                 f"sem aviso prévio implicará na imediata suspensão da prestação dos serviços até a devida regularização ou renegociação. "
                 f"Se o atraso ultrapassar o prazo de 15 (quinze) dias corridos, incidirá multa de 5% ao dia.\n"
                 f"2.2.1. Para a comprovação do pagamento, o CONTRATANTE deverá enviar o comprovante ao CONTRATADO.\n"
-                f"2.2.2. No caso de inadimplemento e ausência de renegociação, o CONTRATADO tomará as medidas cabíveis em lei."
+                f"2.2.2. No caso de inadimplemento e ausência de renegociação, o CONTRATADO tomará as medidas cabíveis em lei.\n\n"
             )
-            pdf.multi_cell(0, 5, c2)
-            pdf.ln(3)
+            pdf.write(5, c2_resto)
             
-            # CLÁUSULA TERCEIRA
+            # --- CLÁUSULA TERCEIRA ---
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA TERCEIRA - DAS AULAS, REMARCAÇÃO E ABONOS", 0, 1)
             pdf.set_font('Arial', '', 9.5)
@@ -541,74 +597,73 @@ if modulo == "👥 Alunos":
                 f"3.1. Para o abono de aulas ou remarcação, somente serão aceitas justificativas por motivos de saúde ou urgência.\n"
                 f"3.2. No caso de viagem do CONTRATANTE, este deverá avisar o CONTRATADO com no mínimo 30 (trinta) dias de antecedência, "
                 f"para que as aulas sejam remarcadas, devendo o valor do Plano ser pago normalmente.\n"
-                f"3.3. Caso a aula caia em feriado, o CONTRATADO contatará o CONTRATANTE para a devida remarcação."
+                f"3.3. Caso a aula caia em feriado, o CONTRATADO contatará o CONTRATANTE para a devida remarcação.\n\n"
             )
-            pdf.multi_cell(0, 5, c3)
-            pdf.ln(3)
+            pdf.write(5, c3)
             
-            # CLÁUSULA QUARTA
+            # --- CLÁUSULA QUARTA ---
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA QUARTA - DOS MATERIAIS E FERRAMENTAS", 0, 1)
             pdf.set_font('Arial', '', 9.5)
             c4 = (
                 f"4.1. Será de inteira responsabilidade do CONTRATANTE a obtenção dos materiais e instrumentos necessários.\n"
-                f"4.2. O CONTRATANTE autoriza o uso não comercial de trechos de aula e imagens para fins de divulgação do trabalho do CONTRATADO."
+                f"4.2. O CONTRATANTE autoriza o uso não comercial de trechos de aula e imagens para fins de divulgação do trabalho do CONTRATADO.\n\n"
             )
-            pdf.multi_cell(0, 5, c4)
-            pdf.ln(3)
+            pdf.write(5, c4)
             
-            # CLÁUSULA QUINTA
+            # --- CLÁUSULA QUINTA ---
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA QUINTA - RESCISÃO E MULTA", 0, 1)
             pdf.set_font('Arial', '', 9.5)
-            c5 = (
-                f"5.1. O presente contrato é firmado na modalidade de plano {plano_escolhido} e, no caso de manifestação de vontade de encerramento, "
-                f"o CONTRATANTE deverá notificar o CONTRATADO por escrito com no mínimo 30 dias de antecedência. O rompimento imediato "
-                f"implicará na aplicação de multa no montante de R$ 400,00 (quatrocentos reais)."
-            )
-            pdf.multi_cell(0, 5, c5)
-            pdf.ln(3)
+            pdf.write(5, "5.1. O presente contrato é firmado na modalidade de plano ")
+            pdf.set_font('Arial', 'B', 9.5)
+            pdf.write(5, f"{plano_escolhido}")
+            pdf.set_font('Arial', '', 9.5)
+            pdf.write(5, " e, no caso de manifestação de vontade de encerramento, o CONTRATANTE deverá notificar o CONTRATADO por escrito com no mínimo 30 dias de antecedência. O rompimento imediato implicará na aplicação de multa no montante de R$ 400,00 (quatrocentos reais).\n\n")
             
-            # CLÁUSULA SEXTA
+            # --- CLÁUSULA SEXTA ---
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA SEXTA - MUDANÇA DE ENDEREÇO E MANUTENÇÃO DE HORÁRIO", 0, 1)
             pdf.set_font('Arial', '', 9.5)
             c6 = (
                 f"6.1. Caso o CONTRATANTE mude de endereço, fica preservado o direito de manter dia e horário, desde que o novo local seja de fácil acesso.\n"
                 f"6.2. Caso o deslocamento se torne inviável, o CONTRATADO apresentará alternativas de continuidade.\n"
-                f"6.3. Em hipótese alguma a mudança de endereço será considerada motivo de rescisão imediata sem aviso prévio de 30 dias."
+                f"6.3. Em hipótese alguma a mudança de endereço será considerada motivo de rescisão imediata sem aviso prévio de 30 dias.\n\n"
             )
-            pdf.multi_cell(0, 5, c6)
-            pdf.ln(3)
+            pdf.write(5, c6)
             
-            # CLÁUSULA SÉTIMA
+            # --- CLÁUSULA SÉTIMA ---
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA SÉTIMA - DAS DISPOSIÇÕES GERAIS", 0, 1)
             pdf.set_font('Arial', '', 9.5)
             c7 = (
-                f"7.1. No caso de alteração destes termos e/ou valores, o CONTRATADO informará o CONTRATANTE para aceite."
+                f"7.1. No caso de alteração destes termos e/ou valores, o CONTRATADO informará o CONTRATANTE para aceite.\n\n"
             )
-            pdf.multi_cell(0, 5, c7)
-            pdf.ln(3)
+            pdf.write(5, c7)
             
-            # CLÁUSULA OITAVA
+            # --- CLÁUSULA OITAVA ---
             pdf.set_font('Arial', 'B', 10)
             pdf.cell(0, 6, "CLÁUSULA OITAVA - DO FORO", 0, 1)
             pdf.set_font('Arial', '', 9.5)
             c8 = (
                 f"8.1. Fica eleito o foro da Comarca de São Paulo/SP para dirimir eventuais litígios. E por estarem justas e contratadas, "
-                f"as partes firmam o presente instrumento em 02 (duas) vias de igual teor."
+                f"as partes firmam o presente instrumento em 02 (duas) vias de igual teor.\n\n"
             )
-            pdf.multi_cell(0, 5, c8)
-            pdf.ln(10)
+            pdf.write(5, c8)
+            pdf.ln(5)
             
-            data_atual_extenso = f"{local_assinatura}, {datetime.date.today().strftime('%d')} de {datetime.date.today().strftime('%B')} de {datetime.date.today().strftime('%Y')}."
+            hoje_dt = datetime.date.today()
+            dia_hoje = hoje_dt.day
+            mes_hoje = MESES_PT_MAP[hoje_dt.month]
+            ano_hoje = hoje_dt.year
+            data_atual_extenso = f"{local_assinatura}, {dia_hoje} de {mes_hoje} de {ano_hoje}."
+            
             pdf.cell(0, 5, data_atual_extenso, 0, 1)
             pdf.ln(20)
             
             pdf.cell(95, 5, "________________________________________________", 0, 0, 'C')
             pdf.cell(95, 5, "________________________________________________", 0, 1, 'C')
-            pdf.cell(95, 5, f"CONTRATANTE - {aluno_dados['nome']}", 0, 0, 'C')
+            pdf.cell(95, 5, f"CONTRATANTE - {nome_aluno}", 0, 0, 'C')
             pdf.cell(95, 5, f"CONTRATADO - {nome_professor}", 0, 1, 'C')
 
             saida = pdf.output(dest='S')
