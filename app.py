@@ -115,7 +115,7 @@ with st.sidebar:
     try:
         st.image("logo.png", use_container_width=True)
     except:
-        st.markdown("### 🎸 Escola de Música Geltera")
+        st.markdown("### 🎸 Harmonia Música")
 
 st.sidebar.markdown("---")
 modulo = st.sidebar.radio(
@@ -166,10 +166,10 @@ def formatar_horario(horario_str):
     return horario_str
 
 # -----------------------------------------------------------------------------
-# MÓDULO 1: ALUNOS E CONTRATOS (Com PDF Restaurado)
+# MÓDULO 1: ALUNOS E CONTRATOS
 # -----------------------------------------------------------------------------
 if modulo == "👥 Alunos":
-    st.markdown("### Gestão de Alunos")
+    st.markdown("### 👥 Gestão de Alunos")
     
     if st.session_state.editando_idx is not None:
         idx_edit = st.session_state.editando_idx
@@ -195,13 +195,18 @@ if modulo == "👥 Alunos":
             vig_idx = vigencias_lista.index(aluno_atual["vigencia"]) if aluno_atual["vigencia"] in vigencias_lista else 1
             vigencia = st.selectbox("Vigência *", vigencias_lista, index=vig_idx)
             
-            valor_contrato = st.number_input("Valor do Contrato (R$) *", min_value=0.0, step=100.0, value=float(aluno_atual["valor_contrato"]))
-            inicio_contrato = st.text_input("Início do Contrato * (ex: 25/10/26)", value=aluno_atual.get("inicio_contrato", "25/10/26"))
+            valor_mensal = st.number_input("Valor Mensal (R$) *", min_value=0.0, step=50.0, value=float(aluno_atual.get("valor_mensal", 0.0)))
             
+            # Cálculo automático do valor total do contrato
+            meses = 6 if vigencia == "6 meses" else 12
+            valor_total_calc = valor_mensal * meses
+            st.info(f"💵 **Valor Total do Contrato (Soma do valor mensal): R$ {valor_total_calc:,.2f}**".replace(",", "X").replace(".", ",").replace("X", "."))
+            
+            inicio_contrato = st.text_input("Início do Contrato * (ex: 25/10/26)", value=aluno_atual.get("inicio_contrato", "25/10/26"))
             termino_contrato = calcular_termino(inicio_contrato, vigencia)
             st.info(f"📅 Término Calculado: **{termino_contrato}**")
             
-            origens_lista = ["Selecione", "Instagram", "Indicação", "Facebook",]
+            origens_lista = ["Selecione", "Instagram", "Indicação", "Facebook", "Outros"]
             origem_idx = origens_lista.index(aluno_atual["origem"]) if aluno_atual["origem"] in origens_lista else 0
             origem = st.selectbox("Origem *", origens_lista, index=origem_idx)
             
@@ -220,7 +225,7 @@ if modulo == "👥 Alunos":
                 st.rerun()
                 
             if submit_edicao:
-                if not nome.strip() or modalidade == "Selecione" or dia == "Selecione" or valor_contrato <= 0.0:
+                if not nome.strip() or modalidade == "Selecione" or dia == "Selecione" or valor_mensal <= 0.0:
                     st.error("❌ Preencha os campos obrigatórios.")
                 else:
                     horario_formatado = formatar_horario(horario_digitos)
@@ -233,7 +238,8 @@ if modulo == "👥 Alunos":
                         "dia": dia,
                         "horario": horario_formatado,
                         "endereco": endereco,
-                        "valor_contrato": valor_contrato,
+                        "valor_mensal": valor_mensal,
+                        "valor_contrato": valor_total_calc,
                         "inicio_contrato": inicio_contrato,
                         "termino_contrato": termino_contrato,
                         "origem": origem,
@@ -272,9 +278,15 @@ if modulo == "👥 Alunos":
                 horario_digitos = st.text_input("Horário * (ex: 1100)")
                 endereco = st.text_input("Endereço Completo *")
                 vigencia = st.selectbox("Vigência *", ["1 ano", "6 meses"])
-                valor_contrato = st.number_input("Valor do Contrato (R$) *", min_value=0.0, step=100.0, value=0.0)
                 
-                inicio_contrato = st.text_input("Início do Contrato *", value="dd/mm/aaaa")
+                valor_mensal = st.number_input("Valor Mensal (R$) *", min_value=0.0, step=50.0, value=0.0)
+                
+                # Cálculo automático do valor total do contrato
+                meses = 6 if vigencia == "6 meses" else 12
+                valor_total_calc = valor_mensal * meses
+                st.info(f"💵 **Valor Total do Contrato (Soma do valor mensal): R$ {valor_total_calc:,.2f}**".replace(",", "X").replace(".", ",").replace("X", "."))
+                
+                inicio_contrato = st.text_input("Início do Contrato *", value="25/10/26")
                 termino_sugerido = calcular_termino(inicio_contrato, vigencia)
                 st.info(f"📅 Término Calculado: **{termino_sugerido}**")
                 
@@ -286,7 +298,7 @@ if modulo == "👥 Alunos":
                 submit = st.form_submit_button("Salvar Aluno", use_container_width=True)
                 
                 if submit:
-                    if not nome.strip() or modalidade == "Selecione" or dia == "Selecione" or valor_contrato <= 0.0:
+                    if not nome.strip() or modalidade == "Selecione" or dia == "Selecione" or valor_mensal <= 0.0:
                         st.error("❌ Preencha os campos obrigatórios.")
                     else:
                         horario_formatado = formatar_horario(horario_digitos)
@@ -299,7 +311,8 @@ if modulo == "👥 Alunos":
                             "dia": dia,
                             "horario": horario_formatado,
                             "endereco": endereco,
-                            "valor_contrato": valor_contrato,
+                            "valor_mensal": valor_mensal,
+                            "valor_contrato": valor_total_calc,
                             "inicio_contrato": inicio_contrato,
                             "termino_contrato": termino_sugerido,
                             "origem": origem,
@@ -323,34 +336,42 @@ if modulo == "👥 Alunos":
     else:
         for idx, aluno in enumerate(st.session_state.alunos):
             with st.container(border=True):
+                # Visível direto: Nome, WhatsApp, Endereço e Aula
                 st.markdown(f"**👤 {aluno['nome']}**")
-                st.text(f"WhatsApp: {aluno.get('whatsapp', '')}")
-                st.text(f"Aula: {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
-                st.text(f"Endereço: {aluno.get('endereco', 'Não informado')}")
-                st.text(f"Valor: R$ {float(aluno.get('valor_contrato', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-                st.text(f"Início: {aluno.get('inicio_contrato', '')} | Término: {aluno.get('termino_contrato', '')}")
-                st.text(f"Vigência: {aluno.get('vigencia', '')} | Origem: {aluno.get('origem', '')}")
-                st.text(f"Custo Transporte: R$ {float(aluno.get('custo_transporte', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-                st.text(f"Status: {aluno.get('status_contrato', '')}")
+                st.text(f"📱 WhatsApp: {aluno.get('whatsapp', '')}")
+                st.text(f"📍 Endereço: {aluno.get('endereco', 'Não informado')}")
+                st.text(f"🎸 Aula: {aluno.get('dia', '')} às {aluno.get('horario', '')} ({aluno.get('modalidade', '')})")
                 
-                col_btn1, col_btn2 = st.columns(2)
-                if col_btn1.button("✏️ Editar", key=f"edit_{aluno['id']}", use_container_width=True):
-                    st.session_state.editando_idx = idx
-                    st.rerun()
-                if col_btn2.button("🗑️ Excluir", key=f"del_{aluno['id']}", use_container_width=True):
-                    if deletar_aluno_banco(aluno['id']):
-                        st.success("Aluno removido!")
+                # Detalhes ocultos no expander (Valores, Contrato e Ações)
+                with st.expander("➕ Ver mais detalhes (Contrato, Valores e Ações)"):
+                    val_mensal = float(aluno.get('valor_mensal', 0.0))
+                    val_contrato = float(aluno.get('valor_contrato', 0.0))
+                    
+                    st.text(f"💵 Valor Mensal: R$ {val_mensal:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                    st.text(f"💰 Valor Total do Contrato: R$ {val_contrato:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                    st.text(f"📅 Início: {aluno.get('inicio_contrato', '')} | Término: {aluno.get('termino_contrato', '')}")
+                    st.text(f"⏳ Vigência: {aluno.get('vigencia', '')} | Origem: {aluno.get('origem', '')}")
+                    st.text(f"🚗 Custo Transporte: R$ {float(aluno.get('custo_transporte', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                    st.text(f"📌 Status: {aluno.get('status_contrato', '')}")
+                    
+                    col_btn1, col_btn2 = st.columns(2)
+                    if col_btn1.button("✏️ Editar", key=f"edit_{aluno['id']}", use_container_width=True):
+                        st.session_state.editando_idx = idx
                         st.rerun()
+                    if col_btn2.button("🗑️ Excluir", key=f"del_{aluno['id']}", use_container_width=True):
+                        if deletar_aluno_banco(aluno['id']):
+                            st.success("Aluno removido!")
+                            st.rerun()
 
     st.markdown("---")
-    st.markdown("##### Gerar Contrato em PDF")
+    st.markdown("##### 📄 Gerar Contrato em PDF")
     
     if st.session_state.alunos:
         nomes_alunos_pdf = [a["nome"] for a in st.session_state.alunos]
         aluno_selecionado = st.selectbox("Selecione o aluno:", nomes_alunos_pdf, key="selectbox_gerar_contrato_pdf")
         
         aluno_dados = next(a for a in st.session_state.alunos if a["nome"] == aluno_selecionado)
-        nome_empresa = "Escola de Música"
+        nome_empresa = "Harmonia Escola de Música"
         local_assinatura = "São Paulo, SP"
         
         inicio_fmt = aluno_dados.get('inicio_contrato', '___/___/______')
@@ -397,9 +418,13 @@ if modulo == "👥 Alunos":
             pdf.set_font('Arial', 'B', 11)
             pdf.cell(0, 8, "CLÁUSULA 2ª - DA VIGÊNCIA E VALOR", 0, 1)
             pdf.set_font('Arial', '', 11)
+            
+            val_mensal_pdf = float(aluno_dados.get('valor_mensal', 0.0))
+            val_total_pdf = float(aluno_dados.get('valor_contrato', 0.0))
+            
             texto_vig = (f"O contrato terá a vigência de {aluno_dados.get('vigencia', '')}, com início em {inicio_fmt} "
-                         f"e término em {termino_fmt}. O valor total pactuado é de R$ {float(aluno_dados.get('valor_contrato', 0)):.2f}, "
-                         f"adimplido conforme o acordado entre as partes.")
+                         f"e término em {termino_fmt}. O valor mensal contratado é de R$ {val_mensal_pdf:.2f}, "
+                         f"perfazendo o valor total de R$ {val_total_pdf:.2f}, adimplido conforme o acordado entre as partes.")
             pdf.multi_cell(0, 6, texto_vig)
             pdf.ln(15)
             
@@ -424,7 +449,7 @@ if modulo == "👥 Alunos":
         pdf_bytes = criar_pdf_contrato()
         
         st.download_button(
-            label="Baixar Contrato em PDF",
+            label="📥 Baixar Contrato em PDF",
             data=pdf_bytes,
             file_name=f"contrato_{aluno_dados['nome'].replace(' ', '_')}.pdf",
             mime="application/pdf",
@@ -438,7 +463,7 @@ if modulo == "👥 Alunos":
 # MÓDULO 2: AULAS
 # -----------------------------------------------------------------------------
 if modulo == "Aulas":
-    st.markdown("### Módulo de Aulas")
+    st.markdown("### 📅 Módulo de Aulas")
     
     hoje = datetime.date.today()
     dia_semana_hoje = DIAS_SEMANA_MAP[hoje.weekday()]
@@ -547,7 +572,7 @@ if modulo == "Aulas":
 # MÓDULO 3: FINANCEIRO
 # -----------------------------------------------------------------------------
 if modulo == "Financeiro":
-    st.markdown("### 💰 Financeiro")
+    st.markdown("### 💰 Módulo Financeiro")
     
     if not st.session_state.mostrar_form_registrar_pagamento:
         if st.button("➕ Registrar Pagamento", use_container_width=True):
@@ -572,10 +597,10 @@ if modulo == "Financeiro":
             if lista_alunos_obj:
                 aluno_sel = next((a for a in lista_alunos_obj if a["nome"] == aluno_pag), None)
                 if aluno_sel:
-                    valor_fixo = float(aluno_sel.get("valor_contrato", 0.0))
+                    valor_fixo = float(aluno_sel.get("valor_mensal", aluno_sel.get("valor_contrato", 0.0)))
                     vencimento_fixo_str = aluno_sel.get("termino_contrato", vencimento_fixo_str)
 
-            st.info(f"📄 Valor: R$ {valor_fixo:,.2f} | Vencimento: {vencimento_fixo_str}".replace(",", "X").replace(".", ",").replace("X", "."))
+            st.info(f"📄 Valor Mensal: R$ {valor_fixo:,.2f} | Vencimento: {vencimento_fixo_str}".replace(",", "X").replace(".", ",").replace("X", "."))
             status_pag = st.selectbox("Status *", ["Recebido", "Em Atraso", "Previsto"])
             obs_pag = st.text_area("Observações")
             
@@ -618,7 +643,7 @@ if modulo == "Financeiro":
                 st.markdown(f"**{pag['aluno']}** - R$ {float(pag.get('valor', 0)):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
                 st.text(f"Status: {pag['status']} | Vencimento: {pag.get('vencimento', '')}")
     else:
-        st.info("Nenhum registro financeiro.")
+        st.info("Nenum registro financeiro.")
 
 # -----------------------------------------------------------------------------
 # MÓDULO 4: RESUMO DO MÊS
@@ -643,7 +668,7 @@ if modulo == "Resumo do Mês":
 
     if st.session_state.alunos:
         df_receita = pd.DataFrame([
-            {"Aluno": a["nome"], "Receita": float(a.get("valor_contrato", 0))}
+            {"Aluno": a["nome"], "Receita": float(a.get("valor_mensal", a.get("valor_contrato", 0)))}
             for a in st.session_state.alunos
         ])
         df_receita = df_receita.set_index("Aluno")
