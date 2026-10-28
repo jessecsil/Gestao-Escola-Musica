@@ -168,7 +168,7 @@ def formatar_horario(horario_str):
 # -----------------------------------------------------------------------------
 # MÓDULO 1: ALUNOS E CONTRATOS (Com PDF Restaurado)
 # -----------------------------------------------------------------------------
-if modulo == "👥 Alunos/Contratos":
+if modulo == "👥 Alunos":
     st.markdown("### Gestão de Alunos")
     
     if st.session_state.editando_idx is not None:
