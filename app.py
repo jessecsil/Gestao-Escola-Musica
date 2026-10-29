@@ -13,7 +13,7 @@ st.set_page_config(
 
 # Conexão com o Supabase usando as chaves dos Secrets
 try:
-    supabase_url = st.secrets["SUPABASE_URL"]
+    supabase_url = st.secrets["SUPABASE_URL"]vcvc
     supabase_key = st.secrets["SUPABASE_KEY"]
     supabase: Client = create_client(supabase_url, supabase_key)
 except Exception as e:
