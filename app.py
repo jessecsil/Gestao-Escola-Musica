@@ -6,7 +6,7 @@ from supabase import create_client, Client
 
 # Configuração da página
 st.set_page_config(
-    page_title="Harmonia Operacional - Gestão de Escola de Música",
+    page_title="Escola de Música",
     page_icon="🎸",
     layout="wide"
 )
@@ -138,7 +138,7 @@ with st.sidebar:
     try:
         st.image("logo.png", use_container_width=True)
     except:
-        st.markdown("### 🎸 Harmonia Música")
+        st.markdown("### 🎸 Escola de Música")
 
 st.sidebar.markdown("---")
 modulo = st.sidebar.radio(
@@ -198,7 +198,6 @@ def formatar_horario(horario_str):
 # MÓDULO 1: ALUNOS E CONTRATOS
 # -----------------------------------------------------------------------------
 if modulo == "👥 Alunos":
-    st.markdown("### 👥 Gestão de Alunos")
     
     if st.session_state.editando_idx is not None:
         idx_edit = st.session_state.editando_idx
@@ -380,7 +379,7 @@ if modulo == "👥 Alunos":
                             st.rerun()
 
     st.markdown("---")
-    st.markdown("##### 📱 Alunos Cadastrados")
+    st.markdown("##### 📱Alunos Cadastrados")
     
     if not st.session_state.alunos:
         st.info("Nenhum aluno registrado no banco de dados.")
@@ -731,8 +730,7 @@ if modulo == "👥 Alunos":
 # MÓDULO 2: AULAS
 # -----------------------------------------------------------------------------
 if modulo == "Aulas":
-    st.markdown("### 📅 Módulo de Aulas")
-    
+     
     hoje = datetime.date.today()
     dia_semana_hoje = DIAS_SEMANA_MAP[hoje.weekday()]
     data_formatada_hoje = hoje.strftime("%d/%m/%Y")
@@ -836,7 +834,7 @@ if modulo == "Aulas":
     with col_m2:
         st.metric("Custos Registrados", f"R$ {total_custos:.2f}")
 
-    st.markdown("##### 📋 Histórico de Aulas")
+    st.markdown("##### 📋Histórico de Aulas")
     if st.session_state.historico_aulas:
         for aula in st.session_state.historico_aulas:
             with st.container(border=True):
@@ -851,7 +849,7 @@ if modulo == "Aulas":
 # MÓDULO 3: FINANCEIRO
 # -----------------------------------------------------------------------------
 if modulo == "Financeiro":
-    st.markdown("### 💰 Módulo Financeiro")
+    st.markdown("### 💰 Financeiro")
     
     if not st.session_state.mostrar_form_registrar_pagamento:
         if st.button("➕ Registrar Pagamento", use_container_width=True):
